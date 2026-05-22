@@ -24,6 +24,46 @@ try {
 
 [Console]::Clear()
 
+Add-Type -TypeDefinition @"
+using System;
+using System.Runtime.InteropServices;
+public class WinConsole {
+    [DllImport("kernel32.dll")] public static extern IntPtr GetConsoleWindow();
+    [DllImport("user32.dll")]   public static extern int    GetWindowLong(IntPtr hWnd, int nIndex);
+    [DllImport("user32.dll")]   public static extern int    SetWindowLong(IntPtr hWnd, int nIndex, int dwNewLong);
+    [DllImport("user32.dll")]   public static extern bool   ShowWindow(IntPtr hWnd, int nCmdShow);
+    [DllImport("user32.dll")]   public static extern IntPtr SendMessage(IntPtr hWnd, uint Msg, IntPtr wParam, IntPtr lParam);
+    [DllImport("user32.dll", CharSet = CharSet.Auto)]
+    public static extern IntPtr LoadImage(IntPtr hinst, string name, uint type, int cx, int cy, uint fuLoad);
+    public const int  GWL_EXSTYLE      = -20;
+    public const int  WS_EX_TOOLWINDOW = 0x00000080;
+    public const int  WS_EX_APPWINDOW  = 0x00040000;
+    public const uint WM_SETICON       = 0x0080;
+    public const uint IMAGE_ICON       = 1;
+    public const uint LR_LOADFROMFILE  = 0x0010;
+    public const uint LR_DEFAULTSIZE   = 0x0040;
+}
+"@ -ErrorAction SilentlyContinue
+
+try {
+    $hwnd  = [WinConsole]::GetConsoleWindow()
+    $style = [WinConsole]::GetWindowLong($hwnd, [WinConsole]::GWL_EXSTYLE)
+    $style = ($style -bor [WinConsole]::WS_EX_TOOLWINDOW) -band (-bnot [WinConsole]::WS_EX_APPWINDOW)
+    [WinConsole]::ShowWindow($hwnd, 0) | Out-Null
+    [WinConsole]::SetWindowLong($hwnd, [WinConsole]::GWL_EXSTYLE, $style) | Out-Null
+    [WinConsole]::ShowWindow($hwnd, 5) | Out-Null
+
+    $iconPath = Join-Path $env:LOCALAPPDATA 'AnyDeskLauncher\anydesk.ico'
+    if (Test-Path $iconPath) {
+        $hIcon = [WinConsole]::LoadImage([IntPtr]::Zero, $iconPath, [WinConsole]::IMAGE_ICON, 0, 0,
+            [WinConsole]::LR_LOADFROMFILE -bor [WinConsole]::LR_DEFAULTSIZE)
+        if ($hIcon -ne [IntPtr]::Zero) {
+            [WinConsole]::SendMessage($hwnd, [WinConsole]::WM_SETICON, [IntPtr]1, $hIcon) | Out-Null
+            [WinConsole]::SendMessage($hwnd, [WinConsole]::WM_SETICON, [IntPtr]0, $hIcon) | Out-Null
+        }
+    }
+} catch {}
+
 if ($Mode -eq 'auto') {
     $p86  = "${env:ProgramFiles(x86)}\AnyDesk\AnyDesk.exe"
     $p64  = "$env:ProgramFiles\AnyDesk\AnyDesk.exe"
@@ -51,7 +91,7 @@ function Draw-Bar([int]$p, [string]$status = '') {
         [Console]::SetCursorPosition(0, 0)
         [Console]::Write(('AnyDesk Reset').PadRight($windowCols))
         [Console]::SetCursorPosition(0, 1)
-        [Console]::Write('[' + ('O' * $f) + (' ' * $e) + ']' + "$p%".PadLeft(5))
+        [Console]::Write('[' + ('=' * $f) + ('-' * $e) + ']' + "$p%".PadLeft(5))
         [Console]::SetCursorPosition(0, 2)
         [Console]::Write($status.PadRight($windowCols))
     } catch {}
