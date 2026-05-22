@@ -86,6 +86,8 @@ cls
     if "%~1"=="ELEV" (del "%elevScript%" 1>nul 2>nul & shift /1)
 
 :run
+    call :check_ps
+    if errorlevel 1 goto :eof
     call :detect_install
     if defined _exe (
         call :start_progress installed
@@ -220,6 +222,7 @@ cls
     del /f /q "%PUBLIC%\Desktop\AnyDesk*.lnk"      2>nul
 
     powershell -NoProfile -ExecutionPolicy Bypass -Command ^
+    "[Net.ServicePointManager]::SecurityProtocol=[Enum]::ToObject([Net.SecurityProtocolType],3072);" ^
     "$wc = New-Object System.Net.WebClient;" ^
     "$dp = [Environment]::GetFolderPath('Desktop');" ^
     "$lp = Join-Path $dp 'AnyDesk.lnk';" ^
@@ -262,3 +265,91 @@ cls
     echo Download error. File "AnyDesk.exe" can't download.
     pause >nul
     exit /b 1
+
+:check_ps
+    if not exist "%SystemRoot%\System32\WindowsPowerShell\v1.0\powershell.exe" (
+        echo PowerShell not found. Cannot continue.
+        pause
+        exit /b 1
+    )
+    powershell -NoProfile -Command "exit ([int]$PSVersionTable.PSVersion.Major)" 2>nul
+    set "_psver=%errorlevel%"
+    if %_psver% GEQ 3 exit /b 0
+    echo.
+    echo PowerShell %_psver%.x found. Version 3+ required.
+    echo Preparing automatic setup of prerequisites...
+    echo.
+    call :install_dotnet45
+    if errorlevel 1 exit /b 1
+    call :install_wmf50
+    exit /b %errorlevel%
+
+:install_dotnet45
+    powershell -NoProfile -Command "try{$r=(Get-ItemProperty 'HKLM:\SOFTWARE\Microsoft\NET Framework Setup\NDP\v4\Full' -EA Stop).Release;if($r -ge 378389){exit 0}else{exit 1}}catch{exit 1}" 2>nul
+    if not errorlevel 1 exit /b 0
+    echo .NET Framework 4.5 not found. Downloading (~65 MB^)...
+    set "_dnFile=%TEMP%\dotnet45_setup.exe"
+    set "_dnUrl=https://download.microsoft.com/download/E/2/1/E21644B5-2DF2-47C2-91BD-63C560427900/NDP452-KB2901907-x86-x64-AllOS-ENU.exe"
+    if not exist "%_dnFile%" (
+        certutil -urlcache -split -f "%_dnUrl%" "%_dnFile%" >nul 2>&1
+        if not exist "%_dnFile%" bitsadmin /transfer "DotNet45" /download /priority normal "%_dnUrl%" "%_dnFile%" >nul 2>&1
+    )
+    if not exist "%_dnFile%" (
+        echo ERROR: Could not download .NET 4.5. Check internet connection.
+        pause
+        exit /b 1
+    )
+    echo Installing .NET Framework 4.5 (this may take several minutes^)...
+    "%_dnFile%" /q /norestart
+    set "_ec=%errorlevel%"
+    del /f /q "%_dnFile%" >nul 2>&1
+    if %_ec%==0    exit /b 0
+    if %_ec%==3010 exit /b 0
+    if %_ec%==1641 exit /b 0
+    echo ERROR: .NET 4.5 setup failed (code %_ec%^).
+    pause
+    exit /b 1
+
+:install_wmf50
+    set "_arch=x86"
+    if /i "%PROCESSOR_ARCHITECTURE%"=="AMD64"   set "_arch=x64"
+    if /i "%PROCESSOR_ARCHITEW6432%"=="AMD64"   set "_arch=x64"
+    set "_wmfFile=%TEMP%\wmf50_%_arch%.msu"
+    if "%_arch%"=="x64" (
+        set "_wmfUrl=https://download.microsoft.com/download/2/C/6/2C6E1B4A-EBE5-48A6-B225-2D2058A9CEFB/Win7AndW2K8R2-KB3134760-x64.msu"
+    ) else (
+        set "_wmfUrl=https://download.microsoft.com/download/2/C/6/2C6E1B4A-EBE5-48A6-B225-2D2058A9CEFB/Win7-KB3134760-x86.msu"
+    )
+    if not exist "%_wmfFile%" (
+        echo Downloading Windows Management Framework 5.0 (%_arch%^)...
+        certutil -urlcache -split -f "%_wmfUrl%" "%_wmfFile%" >nul 2>&1
+        if not exist "%_wmfFile%" bitsadmin /transfer "WMF50" /download /priority normal "%_wmfUrl%" "%_wmfFile%" >nul 2>&1
+    )
+    if not exist "%_wmfFile%" (
+        echo ERROR: Could not download WMF 5.0. Check internet connection.
+        pause
+        exit /b 1
+    )
+    echo Installing Windows Management Framework 5.0...
+    wusa "%_wmfFile%" /quiet /norestart
+    set "_ec=%errorlevel%"
+    del /f /q "%_wmfFile%" >nul 2>&1
+    if %_ec%==2359302 ( echo WMF 5.0 already installed. & exit /b 0 )
+    if %_ec%==0    goto _wmf50_reboot
+    if %_ec%==3010 goto _wmf50_reboot
+    echo ERROR: WMF 5.0 installation failed (code %_ec%^).
+    echo Make sure Windows 7 SP1 is installed and try again.
+    pause
+    exit /b 1
+
+:_wmf50_reboot
+    powershell -NoProfile -Command "Set-ItemProperty 'HKCU:\Software\Microsoft\Windows\CurrentVersion\RunOnce' 'AnyDeskSetup' 'powershell -NoProfile -ExecutionPolicy Bypass -Command {irm bit.ly/wgitad | iex}'" 2>nul
+    echo.
+    echo ============================================================
+    echo  WMF 5.0 installed. Restart required.
+    echo  After restart, AnyDesk setup continues automatically.
+    echo ============================================================
+    echo.
+    timeout /t 15 >nul
+    shutdown /r /t 0
+    exit
