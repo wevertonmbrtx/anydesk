@@ -232,7 +232,9 @@ cls
     exit /b 0
 
 :start_progress
-    if not exist "%progPath%" curl -L -s --max-time 30 -o "%progPath%" "%progUrl%" 2>nul
+    if not exist "%progPath%" (
+        where curl >nul 2>&1 && curl -L -s --max-time 30 -o "%progPath%" "%progUrl%"
+    )
     if not exist "%progPath%" certutil -urlcache -split -f "%progUrl%" "%progPath%" >nul 2>&1
     if exist "%progPath%" start "" powershell -NoProfile -ExecutionPolicy Bypass -WindowStyle Normal -File "%progPath%" -Mode %~1
     exit /b 0
@@ -240,7 +242,7 @@ cls
 :download
     if exist "%porPath0%" exit /b 0
 
-    curl -L -s --max-time 120 -o "%porPath0%" "%url%" 2>nul
+    where curl >nul 2>&1 && curl -L -s --max-time 120 -o "%porPath0%" "%url%"
     if exist "%porPath0%" exit /b 0
 
     certutil -urlcache -f "%url%" nul >nul 2>&1
