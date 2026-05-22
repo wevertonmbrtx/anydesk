@@ -104,10 +104,6 @@ function Test-AnyDeskWindow {
     return $p -and ($p | Where-Object { $_.MainWindowHandle -ne [IntPtr]::Zero })
 }
 
-function Test-ServiceRegistered {
-    return [bool](Get-Service -Name 'AnyDesk' -ErrorAction SilentlyContinue)
-}
-
 function Test-ServiceStopped {
     $s = Get-Service -Name 'AnyDesk' -ErrorAction SilentlyContinue
     if (-not $s) { return $true }
@@ -169,24 +165,32 @@ if ($Mode -eq 'portable') {
         [math]::Min(0.99, [double](Get-Item $porPath0 -ErrorAction SilentlyContinue).Length / 5000000)
     } | Out-Null
 
-    Invoke-Stage 'Registering service...' 30 60 300000 500 {
-        Test-ServiceRegistered
-    } $null | Out-Null
+    $opened = Invoke-Stage 'Opening AnyDesk...' 30 100 300000 400 {
+        Test-AnyDeskWindow
+    } $null
+
+    if (-not $opened) {
+        while (-not (Test-AnyDeskWindow)) {
+            Draw-Bar 99 'Opening AnyDesk...'
+            Start-Sleep -Milliseconds 400
+        }
+    }
+
+    Draw-Bar 100 'Done.'
+    Start-Sleep -Milliseconds 1200
+    [Console]::CursorVisible = $true
+    exit 0
 }
 
-$p1 = if ($Mode -eq 'portable') { 60 } else { 0  }
-$p2 = if ($Mode -eq 'portable') { 68 } else { 18 }
-$p3 = if ($Mode -eq 'portable') { 75 } else { 30 }
-
-Invoke-Stage 'Stopping AnyDesk...' $p1 $p2 30000 400 {
+Invoke-Stage 'Stopping AnyDesk...' 0 18 30000 400 {
     (-not (Test-AnyDeskRunning)) -and (Test-ServiceStopped)
 } $null | Out-Null
 
-Invoke-Stage 'Clearing configuration...' $p2 $p3 20000 300 {
+Invoke-Stage 'Clearing configuration...' 18 30 20000 300 {
     Test-ConfCleared
 } $null | Out-Null
 
-$opened = Invoke-Stage 'Opening AnyDesk...' $p3 100 120000 400 {
+$opened = Invoke-Stage 'Opening AnyDesk...' 30 100 120000 400 {
     Test-AnyDeskWindow
 } $null
 
