@@ -51,7 +51,7 @@ function Draw-Bar([int]$p, [string]$status = '') {
         [Console]::SetCursorPosition(0, 0)
         [Console]::Write(('Loading AnyDesk...').PadRight($windowCols))
         [Console]::SetCursorPosition(0, 1)
-        [Console]::Write('[' + ('=' * $f) + ('-' * $e) + ']' + "$p%".PadLeft(5))
+        [Console]::Write('[' + ('O' * $f) + (' ' * $e) + ']' + "$p%".PadLeft(5))
         [Console]::SetCursorPosition(0, 2)
         [Console]::Write($status.PadRight($windowCols))
     } catch {}
@@ -120,12 +120,12 @@ function Invoke-Stage {
     }
 }
 
-Draw-Bar 0 'Initializing...'
+Draw-Bar 0 'Initializing'
 
 $sawAbsent = -not (Test-AnyDeskWindow)
 
 if ($Mode -eq 'portable') {
-    Invoke-Stage 'Downloading portable package...' 0 35 180000 400 {
+    Invoke-Stage 'Downloading portable' 0 35 180000 400 {
         (Test-Path $porPath0) -and ((Get-Item $porPath0 -ErrorAction SilentlyContinue).Length -ge 2097152)
     } {
         if (-not (Test-Path $porPath0)) { return 0 }
@@ -138,17 +138,17 @@ if ($Mode -eq 'portable') {
     } $null | Out-Null
 }
 
-Invoke-Stage 'Resetting session...' (if ($Mode -eq 'portable') { 60 } else { 0 }) (if ($Mode -eq 'portable') { 78 } else { 28 }) 35000 400 {
+Invoke-Stage 'Resetting session' (if ($Mode -eq 'portable') { 60 } else { 0 }) (if ($Mode -eq 'portable') { 78 } else { 28 }) 35000 400 {
     $visible = Test-AnyDeskWindow
     if (-not $visible) { $script:sawAbsent = $true }
     return $script:sawAbsent
 } $null | Out-Null
 
-Invoke-Stage 'Generating new ID...' (if ($Mode -eq 'portable') { 78 } else { 28 }) (if ($Mode -eq 'portable') { 95 } else { 90 }) 70000 500 {
+Invoke-Stage 'Generating new ID' (if ($Mode -eq 'portable') { 78 } else { 28 }) (if ($Mode -eq 'portable') { 95 } else { 90 }) 70000 500 {
     Test-NewId
 } $null | Out-Null
 
-$opened = Invoke-Stage 'Opening app...' (if ($Mode -eq 'portable') { 95 } else { 90 }) 100 90000 400 {
+$opened = Invoke-Stage 'Opening app' (if ($Mode -eq 'portable') { 95 } else { 90 }) 100 90000 400 {
     $visible = Test-AnyDeskWindow
     if (-not $visible) { $script:sawAbsent = $true }
     return $visible
@@ -156,7 +156,7 @@ $opened = Invoke-Stage 'Opening app...' (if ($Mode -eq 'portable') { 95 } else {
 
 if (-not $opened) {
     while (-not (Test-AnyDeskWindow)) {
-        Draw-Bar 99 'Waiting for app...'
+        Draw-Bar 99 'Waiting for app'
         Start-Sleep -Milliseconds 400
     }
 }
