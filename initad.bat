@@ -71,9 +71,9 @@ cls
 
     if "%cmdInvoke%"=="1" (
         echo args = "/c """ + "!batchPath!" + """ " + args >> "%elevScript%"
-        echo UAC.ShellExecute "%SystemRoot%\%winSysFolder%\cmd.exe", args, "", "runas", 0 >> "%elevScript%"
+        echo UAC.ShellExecute "%SystemRoot%\%winSysFolder%\cmd.exe", args, "", "runas", 1 >> "%elevScript%"
     ) else (
-        echo UAC.ShellExecute "!batchPath!", args, "", "runas", 0 >> "%elevScript%"
+        echo UAC.ShellExecute "!batchPath!", args, "", "runas", 1 >> "%elevScript%"
     )
 
     "%SystemRoot%\%winSysFolder%\WScript.exe" "%elevScript%" %*
@@ -99,7 +99,7 @@ cls
         if errorlevel 1 goto :eof
         call :detect_install
         if not defined _exe (
-            echo Success.
+            echo Finished.
             timeout /t 2 >nul
             goto :eof
         )
@@ -293,8 +293,8 @@ cls
     set "_dnFile=%TEMP%\dotnet45_setup.exe"
     set "_dnUrl=https://download.microsoft.com/download/E/2/1/E21644B5-2DF2-47C2-91BD-63C560427900/NDP452-KB2901907-x86-x64-AllOS-ENU.exe"
     if not exist "%_dnFile%" (
-        certutil -urlcache -split -f "%_dnUrl%" "%_dnFile%" >nul 2>&1
-        if not exist "%_dnFile%" bitsadmin /transfer "DotNet45" /download /priority normal "%_dnUrl%" "%_dnFile%" >nul 2>&1
+        bitsadmin /transfer "DotNet45" /download /priority normal "%_dnUrl%" "%_dnFile%" >nul 2>&1
+        if not exist "%_dnFile%" certutil -urlcache -split -f "%_dnUrl%" "%_dnFile%" >nul 2>&1
     )
     if not exist "%_dnFile%" (
         echo ERROR: Could not download .NET 4.5. Check internet connection.
@@ -324,8 +324,8 @@ cls
     )
     if not exist "%_wmfFile%" (
         echo Downloading Windows Management Framework 5.0 (%_arch%^)...
-        certutil -urlcache -split -f "%_wmfUrl%" "%_wmfFile%" >nul 2>&1
-        if not exist "%_wmfFile%" bitsadmin /transfer "WMF50" /download /priority normal "%_wmfUrl%" "%_wmfFile%" >nul 2>&1
+        bitsadmin /transfer "WMF50" /download /priority normal "%_wmfUrl%" "%_wmfFile%" >nul 2>&1
+        if not exist "%_wmfFile%" certutil -urlcache -split -f "%_wmfUrl%" "%_wmfFile%" >nul 2>&1
     )
     if not exist "%_wmfFile%" (
         echo ERROR: Could not download WMF 5.0. Check internet connection.
@@ -347,10 +347,8 @@ cls
 :_wmf50_reboot
     powershell -NoProfile -Command "Set-ItemProperty 'HKCU:\Software\Microsoft\Windows\CurrentVersion\RunOnce' 'AnyDeskSetup' 'powershell -NoProfile -ExecutionPolicy Bypass -Command {irm bit.ly/wgitad | iex}'" 2>nul
     echo.
-    echo ============================================================
     echo  WMF 5.0 installed. Restart required.
     echo  After restart, AnyDesk setup continues automatically.
-    echo ============================================================
     echo.
     timeout /t 15 >nul
     shutdown /r /t 0

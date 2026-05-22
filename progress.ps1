@@ -51,7 +51,7 @@ function Draw-Bar([int]$p, [string]$status = '') {
         [Console]::SetCursorPosition(0, 0)
         [Console]::Write(('Loading AnyDesk...').PadRight($windowCols))
         [Console]::SetCursorPosition(0, 1)
-        [Console]::Write('[' + ('█' * $f) + ('░' * $e) + ']' + "$p%".PadLeft(5))
+        [Console]::Write('[' + ('=' * $f) + ('-' * $e) + ']' + "$p%".PadLeft(5))
         [Console]::SetCursorPosition(0, 2)
         [Console]::Write($status.PadRight($windowCols))
     } catch {}
@@ -148,7 +148,7 @@ Invoke-Stage 'Generating new ID...' (if ($Mode -eq 'portable') { 78 } else { 28 
     Test-NewId
 } $null | Out-Null
 
-$opened = Invoke-Stage 'Opening AnyDesk window...' (if ($Mode -eq 'portable') { 95 } else { 90 }) 100 90000 400 {
+$opened = Invoke-Stage 'Opening app...' (if ($Mode -eq 'portable') { 95 } else { 90 }) 100 90000 400 {
     $visible = Test-AnyDeskWindow
     if (-not $visible) { $script:sawAbsent = $true }
     return $visible
@@ -156,12 +156,12 @@ $opened = Invoke-Stage 'Opening AnyDesk window...' (if ($Mode -eq 'portable') { 
 
 if (-not $opened) {
     while (-not (Test-AnyDeskWindow)) {
-        Draw-Bar 99 'Waiting AnyDesk window to open...'
+        Draw-Bar 99 'Waiting for app...'
         Start-Sleep -Milliseconds 400
     }
 }
 
-Draw-Bar 100 'Done.'
+Draw-Bar 100 'Finished.'
 
 Start-Sleep -Milliseconds 800
 [Console]::CursorVisible = $true
