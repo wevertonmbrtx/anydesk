@@ -1,14 +1,13 @@
-﻿param(
+param(
     [ValidateSet('installed', 'portable', 'auto')]
     [string]$Mode = 'auto'
 )
 
 $ErrorActionPreference = 'SilentlyContinue'
-$host.UI.RawUI.WindowTitle = 'AnyDesk'
 [Console]::CursorVisible = $false
 
-$windowCols = 36
-$windowRows = 3
+$windowCols   = 36
+$windowRows   = 3
 $fallbackRows = 4
 
 try {
@@ -26,13 +25,13 @@ try {
 [Console]::Clear()
 
 if ($Mode -eq 'auto') {
-    $p86 = "${env:ProgramFiles(x86)}\AnyDesk\AnyDesk.exe"
-    $p64 = "$env:ProgramFiles\AnyDesk\AnyDesk.exe"
+    $p86  = "${env:ProgramFiles(x86)}\AnyDesk\AnyDesk.exe"
+    $p64  = "$env:ProgramFiles\AnyDesk\AnyDesk.exe"
     $Mode = if ((Test-Path $p86) -or (Test-Path $p64)) { 'installed' } else { 'portable' }
 }
 
 $barWidth = 20
-$sysConf  = Join-Path $env:ALLUSERSPROFILE 'AnyDesk\system.conf'
+$confDir  = Join-Path $env:ALLUSERSPROFILE 'AnyDesk'
 $insPath0 = Join-Path ${env:ProgramFiles(x86)} 'AnyDesk\AnyDesk.exe'
 $insPath1 = Join-Path $env:ProgramFiles 'AnyDesk\AnyDesk.exe'
 $porPath0 = Join-Path $env:TEMP 'AnyDesk.exe'
@@ -44,17 +43,22 @@ function Limit-Text([string]$Text, [int]$MaxLength = $windowCols) {
 }
 
 function Draw-Bar([int]$p, [string]$status = '') {
-    $f = [math]::Floor($p * $barWidth / 100)
-    $e = $barWidth - $f
+    $f      = [math]::Floor($p * $barWidth / 100)
+    $e      = $barWidth - $f
     $status = Limit-Text $status $windowCols
+    $host.UI.RawUI.WindowTitle = "AnyDesk  $p%"
     try {
         [Console]::SetCursorPosition(0, 0)
-        [Console]::Write(('Loading AnyDesk...').PadRight($windowCols))
+        [Console]::Write(('AnyDesk Reset').PadRight($windowCols))
         [Console]::SetCursorPosition(0, 1)
-        [Console]::Write('[' + ('O' * $f) + (' ' * $e) + ']' + "$p%".PadLeft(5))
+        [Console]::Write('[' + ('=' * $f) + ('-' * $e) + ']' + "$p%".PadLeft(5))
         [Console]::SetCursorPosition(0, 2)
         [Console]::Write($status.PadRight($windowCols))
     } catch {}
+}
+
+function Test-AnyDeskRunning {
+    return [bool](Get-Process -Name 'AnyDesk' -ErrorAction SilentlyContinue)
 }
 
 function Test-AnyDeskWindow {
@@ -63,17 +67,27 @@ function Test-AnyDeskWindow {
 }
 
 function Test-ServiceRegistered {
-    sc.exe query 'AnyDesk' > $null 2>&1
-    return ($LASTEXITCODE -eq 0)
+    return [bool](Get-Service -Name 'AnyDesk' -ErrorAction SilentlyContinue)
+}
+
+function Test-ServiceStopped {
+    $s = Get-Service -Name 'AnyDesk' -ErrorAction SilentlyContinue
+    if (-not $s) { return $true }
+    return $s.Status -eq 'Stopped'
 }
 
 function Test-InstalledAnyDesk {
     return (Test-Path $insPath0) -or (Test-Path $insPath1)
 }
 
-function Test-NewId {
-    if (-not (Test-Path $sysConf)) { return $false }
-    return Select-String -Path $sysConf -Pattern '^ad\.anynet\.id=' -Quiet
+function Test-ConfCleared {
+    if (-not (Test-Path $confDir)) { return $true }
+    return -not (Get-ChildItem "$confDir\*.conf" -ErrorAction SilentlyContinue)
+}
+
+function Test-ServiceRunning {
+    $s = Get-Service -Name 'AnyDesk' -ErrorAction SilentlyContinue
+    return $s -and $s.Status -eq 'Running'
 }
 
 function Invoke-Stage {
@@ -107,61 +121,62 @@ function Invoke-Stage {
             [double]$elapsedMs / [double]$TimeoutMs
         }
 
-        if ($ratio -lt 0) { $ratio = 0 }
-        if ($ratio -gt 0.99) { $ratio = 0.99 }
-
-        $span = [math]::Max(1, $EndPct - $StartPct)
-        $pct  = [int]([math]::Floor($StartPct + ($span * $ratio)))
-        if ($pct -lt $StartPct) { $pct = $StartPct }
-        if ($pct -ge $EndPct) { $pct = $EndPct - 1 }
+        $ratio = [math]::Max(0.0, [math]::Min(0.99, $ratio))
+        $span  = [math]::Max(1, $EndPct - $StartPct)
+        $pct   = [math]::Max($StartPct, [math]::Min($EndPct - 1, [int][math]::Floor($StartPct + $span * $ratio)))
 
         Draw-Bar $pct $Label
         Start-Sleep -Milliseconds $PollMs
     }
 }
 
-Draw-Bar 0 'Initializing'
-
-$sawAbsent = -not (Test-AnyDeskWindow)
+Draw-Bar 0 'Initializing...'
 
 if ($Mode -eq 'portable') {
-    Invoke-Stage 'Downloading portable' 0 35 180000 400 {
-        (Test-Path $porPath0) -and ((Get-Item $porPath0 -ErrorAction SilentlyContinue).Length -ge 2097152)
+    Invoke-Stage 'Downloading AnyDesk...' 0 30 180000 400 {
+        (Test-Path $porPath0) -and ((Get-Item $porPath0 -ErrorAction SilentlyContinue).Length -ge 4000000)
     } {
-        if (-not (Test-Path $porPath0)) { return 0 }
-        $size = (Get-Item $porPath0 -ErrorAction SilentlyContinue).Length
-        return [math]::Min(0.99, [double]$size / 6000000)
+        if (-not (Test-Path $porPath0)) { return 0.0 }
+        [math]::Min(0.99, [double](Get-Item $porPath0 -ErrorAction SilentlyContinue).Length / 5000000)
     } | Out-Null
 
-    Invoke-Stage 'Waiting install/service registration...' 35 60 120000 600 {
-        (Test-InstalledAnyDesk) -and (Test-ServiceRegistered)
+    Invoke-Stage 'Installing AnyDesk...' 30 50 120000 500 {
+        Test-InstalledAnyDesk
+    } $null | Out-Null
+
+    Invoke-Stage 'Registering service...' 50 60 60000 500 {
+        Test-ServiceRegistered
     } $null | Out-Null
 }
 
-Invoke-Stage 'Resetting session' (if ($Mode -eq 'portable') { 60 } else { 0 }) (if ($Mode -eq 'portable') { 78 } else { 28 }) 35000 400 {
-    $visible = Test-AnyDeskWindow
-    if (-not $visible) { $script:sawAbsent = $true }
-    return $script:sawAbsent
+$p1 = if ($Mode -eq 'portable') { 60 } else { 0  }
+$p2 = if ($Mode -eq 'portable') { 68 } else { 18 }
+$p3 = if ($Mode -eq 'portable') { 75 } else { 30 }
+$p4 = if ($Mode -eq 'portable') { 90 } else { 85 }
+
+Invoke-Stage 'Stopping AnyDesk...' $p1 $p2 30000 400 {
+    (-not (Test-AnyDeskRunning)) -and (Test-ServiceStopped)
 } $null | Out-Null
 
-Invoke-Stage 'Generating new ID' (if ($Mode -eq 'portable') { 78 } else { 28 }) (if ($Mode -eq 'portable') { 95 } else { 90 }) 70000 500 {
-    Test-NewId
+Invoke-Stage 'Clearing configuration...' $p2 $p3 20000 300 {
+    Test-ConfCleared
 } $null | Out-Null
 
-$opened = Invoke-Stage 'Opening app' (if ($Mode -eq 'portable') { 95 } else { 90 }) 100 90000 400 {
-    $visible = Test-AnyDeskWindow
-    if (-not $visible) { $script:sawAbsent = $true }
-    return $visible
+Invoke-Stage 'Starting AnyDesk...' $p3 $p4 70000 500 {
+    Test-ServiceRunning
+} $null | Out-Null
+
+$opened = Invoke-Stage 'Opening AnyDesk...' $p4 100 90000 400 {
+    Test-AnyDeskWindow
 } $null
 
 if (-not $opened) {
     while (-not (Test-AnyDeskWindow)) {
-        Draw-Bar 99 'Waiting for app'
+        Draw-Bar 99 'Opening AnyDesk...'
         Start-Sleep -Milliseconds 400
     }
 }
 
-Draw-Bar 100 'Finished.'
-
-Start-Sleep -Milliseconds 800
+Draw-Bar 100 'Done.'
+Start-Sleep -Milliseconds 1200
 [Console]::CursorVisible = $true
