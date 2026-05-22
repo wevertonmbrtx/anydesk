@@ -221,10 +221,27 @@ cls
     del /f /q "%PUBLIC%\Desktop\AnyDesk*.lnk"      2>nul
 
     powershell -NoProfile -ExecutionPolicy Bypass -Command ^
-    "$wc = New-Object System.Net.WebClient;" ^
+    "$targets = @('%_exe%','%ProgramFiles(x86)%\AnyDesk\AnyDesk.exe','%ProgramFiles%\AnyDesk\AnyDesk.exe');" ^
+    "$target = $targets | Where-Object { Test-Path $_ } | Select-Object -First 1;" ^
     "$dp = [Environment]::GetFolderPath('Desktop');" ^
     "$lp = Join-Path $dp 'AnyDesk.lnk';" ^
-    "if (-not (Test-Path $lp)) { $wc.DownloadFile('%lnkUrl%', $lp) }"
+    "if ($target) {" ^
+    "  $ws = New-Object -ComObject WScript.Shell;" ^
+    "  $sc = $ws.CreateShortcut($lp);" ^
+    "  $sc.TargetPath = $target;" ^
+    "  $sc.WorkingDirectory = Split-Path $target;" ^
+    "  $iconCandidates = @(" ^
+    "    (Join-Path (Split-Path $target) 'AnyDesk.ico')," ^
+    "    '%USERPROFILE%\AppData\Roaming\AnyDesk\anydesk.ico'," ^
+    "    '%ProgramFiles(x86)%\AnyDesk\AnyDesk.exe'," ^
+    "    '%ProgramFiles%\AnyDesk\AnyDesk.exe'," ^
+    "    $target" ^
+    "  );" ^
+    "  $icon = $iconCandidates | Where-Object { Test-Path $_ } | Select-Object -First 1;" ^
+    "  if (-not $icon) { $icon = $target }" ^
+    "  $sc.IconLocation = '{0},0' -f $icon;" ^
+    "  $sc.Save();" ^
+    "}"
 
     timeout /t 2 >nul
     exit /b 0
