@@ -1,4 +1,4 @@
-param(
+﻿param(
     [ValidateSet('installed', 'portable', 'auto')]
     [string]$Mode = 'auto'
 )
@@ -51,7 +51,7 @@ function Draw-Bar([int]$p, [string]$status = '') {
         [Console]::SetCursorPosition(0, 0)
         [Console]::Write(('AnyDesk Reset').PadRight($windowCols))
         [Console]::SetCursorPosition(0, 1)
-        [Console]::Write('[' + ('=' * $f) + ('-' * $e) + ']' + "$p%".PadLeft(5))
+        [Console]::Write('[' + ('O' * $f) + (' ' * $e) + ']' + "$p%".PadLeft(5))
         [Console]::SetCursorPosition(0, 2)
         [Console]::Write($status.PadRight($windowCols))
     } catch {}
