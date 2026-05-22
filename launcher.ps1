@@ -3,11 +3,10 @@ $ErrorActionPreference = 'Stop'
 
 $desktop = [Environment]::GetFolderPath('Desktop')
 $lnkPath = Join-Path $desktop 'AnyDesk.lnk'
-$iconPath = "$env:USERPROFILE\AppData\Roaming\AnyDesk\anydesk.ico"
+$iconDir = Join-Path $env:LOCALAPPDATA 'AnyDeskLauncher'
+$iconPath = Join-Path $iconDir 'anydesk.ico'
 $webClient = New-Object Net.WebClient
 $webClient.Headers.Add('User-Agent', 'Mozilla/5.0')
-
-if (Test-Path $iconPath) { Remove-Item $iconPath -Force }
 
 if (Test-Path $lnkPath) { Remove-Item $lnkPath -Force }
 
@@ -43,7 +42,6 @@ try {
 
         $icoBytes.AddRange($pngBytes)
 
-        $iconDir = Split-Path $iconPath
         if (-not (Test-Path $iconDir)) {
             New-Item -ItemType Directory -Path $iconDir -Force | Out-Null
         }
@@ -63,6 +61,17 @@ if (-not (Test-Path $lnkPath)) {
 }
 
 if (Test-Path $lnkPath) {
+    try {
+        $ws = New-Object -ComObject WScript.Shell
+        $shortcut = $ws.CreateShortcut($lnkPath)
+        if (Test-Path $iconPath) {
+            $shortcut.IconLocation = "$iconPath,0"
+            $shortcut.Save()
+        }
+    } catch {
+        Write-Warning "Can't update shortcut icon: $_"
+    }
+
     Invoke-Item $lnkPath
 
     $batPath = "$env:TEMP\initad.bat"
