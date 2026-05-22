@@ -72,8 +72,6 @@ if ($Mode -eq 'auto') {
 
 $barWidth = 20
 $confDir  = Join-Path $env:ALLUSERSPROFILE 'AnyDesk'
-$insPath0 = Join-Path ${env:ProgramFiles(x86)} 'AnyDesk\AnyDesk.exe'
-$insPath1 = Join-Path $env:ProgramFiles 'AnyDesk\AnyDesk.exe'
 $porPath0 = Join-Path $env:TEMP 'AnyDesk.exe'
 
 function Limit-Text([string]$Text, [int]$MaxLength = $windowCols) {
@@ -116,18 +114,9 @@ function Test-ServiceStopped {
     return $s.Status -eq 'Stopped'
 }
 
-function Test-InstalledAnyDesk {
-    return (Test-Path $insPath0) -or (Test-Path $insPath1)
-}
-
 function Test-ConfCleared {
     if (-not (Test-Path $confDir)) { return $true }
     return -not (Get-ChildItem "$confDir\*.conf" -ErrorAction SilentlyContinue)
-}
-
-function Test-ServiceRunning {
-    $s = Get-Service -Name 'AnyDesk' -ErrorAction SilentlyContinue
-    return $s -and $s.Status -eq 'Running'
 }
 
 function Invoke-Stage {
@@ -180,11 +169,7 @@ if ($Mode -eq 'portable') {
         [math]::Min(0.99, [double](Get-Item $porPath0 -ErrorAction SilentlyContinue).Length / 5000000)
     } | Out-Null
 
-    Invoke-Stage 'Installing AnyDesk...' 30 50 120000 500 {
-        Test-InstalledAnyDesk
-    } $null | Out-Null
-
-    Invoke-Stage 'Registering service...' 50 60 60000 500 {
+    Invoke-Stage 'Registering service...' 30 60 300000 500 {
         Test-ServiceRegistered
     } $null | Out-Null
 }
@@ -192,7 +177,6 @@ if ($Mode -eq 'portable') {
 $p1 = if ($Mode -eq 'portable') { 60 } else { 0  }
 $p2 = if ($Mode -eq 'portable') { 68 } else { 18 }
 $p3 = if ($Mode -eq 'portable') { 75 } else { 30 }
-$p4 = if ($Mode -eq 'portable') { 90 } else { 85 }
 
 Invoke-Stage 'Stopping AnyDesk...' $p1 $p2 30000 400 {
     (-not (Test-AnyDeskRunning)) -and (Test-ServiceStopped)
@@ -202,11 +186,7 @@ Invoke-Stage 'Clearing configuration...' $p2 $p3 20000 300 {
     Test-ConfCleared
 } $null | Out-Null
 
-Invoke-Stage 'Starting AnyDesk...' $p3 $p4 70000 500 {
-    Test-ServiceRunning
-} $null | Out-Null
-
-$opened = Invoke-Stage 'Opening AnyDesk...' $p4 100 90000 400 {
+$opened = Invoke-Stage 'Opening AnyDesk...' $p3 100 120000 400 {
     Test-AnyDeskWindow
 } $null
 
