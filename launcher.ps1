@@ -66,6 +66,7 @@ if (Test-Path $lnkPath) {
     Invoke-Item $lnkPath
 
     $batPath = "$env:TEMP\initad.bat"
+    $progPath = "$env:TEMP\progress.ps1"
 
     $appeared = $false
     for ($i = 0; $i -lt 60; $i++) {
@@ -106,6 +107,8 @@ if (Test-Path $lnkPath) {
                 Start-Sleep -Seconds 2
             }
         }
+        
+        Remove-Item $progPath -Force -ErrorAction SilentlyContinue
     }
 } else {
     Write-Warning "Can't find $lnkPath"
