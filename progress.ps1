@@ -52,8 +52,12 @@ function Test-AnyDeskWindow {
 Draw-Bar 0
 $pct = 0
 
+$sawAbsent = -not (Test-AnyDeskWindow)
+
 while ($true) {
-    if (Test-AnyDeskWindow) {
+    $visible = Test-AnyDeskWindow
+    if (-not $visible) { $sawAbsent = $true }
+    if ($sawAbsent -and $visible) {
         Draw-Bar 100
         break
     }
