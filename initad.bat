@@ -69,9 +69,9 @@ cls
 
     if "%cmdInvoke%"=="1" (
         echo args = "/c """ + "!batchPath!" + """ " + args >> "%elevScript%"
-        echo UAC.ShellExecute "%SystemRoot%\%winSysFolder%\cmd.exe", args, "", "runas", 2 >> "%elevScript%"
+        echo UAC.ShellExecute "%SystemRoot%\%winSysFolder%\cmd.exe", args, "", "runas", 0 >> "%elevScript%"
     ) else (
-        echo UAC.ShellExecute "!batchPath!", args, "", "runas", 2 >> "%elevScript%"
+        echo UAC.ShellExecute "!batchPath!", args, "", "runas", 0 >> "%elevScript%"
     )
 
     "%SystemRoot%\%winSysFolder%\WScript.exe" "%elevScript%" %*
