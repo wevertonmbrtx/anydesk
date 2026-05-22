@@ -7,9 +7,9 @@ $ErrorActionPreference = 'SilentlyContinue'
 $host.UI.RawUI.WindowTitle = 'AnyDesk'
 [Console]::CursorVisible = $false
 
-$windowCols = 56
-$windowRows = 4
-$fallbackRows = 6
+$windowCols = 36
+$windowRows = 3
+$fallbackRows = 4
 
 try {
     $sz = New-Object System.Management.Automation.Host.Size($windowCols, $windowRows)
