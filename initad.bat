@@ -43,8 +43,10 @@ cls
     set "insPath0=%ProgramFiles(x86)%\AnyDesk\AnyDesk.exe"
     set "insPath1=%ProgramFiles%\AnyDesk\AnyDesk.exe"
     set "porPath0=%TEMP%\AnyDesk.exe"
+    set "progPath=%TEMP%\progress.ps1"
     set "url=https://download.anydesk.com/AnyDesk.exe"
     set "lnkUrl=https://raw.githubusercontent.com/wevertonmbrtx/anydesk/refs/heads/main/AnyDesk.lnk"
+    set "progUrl=https://raw.githubusercontent.com/wevertonmbrtx/anydesk/refs/heads/main/progress.ps1"
     set "sysConf=%ALLUSERSPROFILE%\AnyDesk\system.conf"
     set "userConf=%APPDATA%\AnyDesk\user.conf"
     set "userConfBak=%TEMP%\anydesk_user.conf"
@@ -85,6 +87,11 @@ cls
 
 :run
     call :detect_install
+    if defined _exe (
+        call :start_progress installed
+    ) else (
+        call :start_progress portable
+    )
     if not defined _exe (
         call :install_portable
         if errorlevel 1 goto :eof
@@ -220,6 +227,12 @@ cls
     "if (-not (Test-Path $lp)) { $wc.DownloadFile('%lnkUrl%', $lp) }"
 
     timeout /t 2 >nul
+    exit /b 0
+
+:start_progress
+    if not exist "%progPath%" curl -L -s --max-time 30 -o "%progPath%" "%progUrl%" 2>nul
+    if not exist "%progPath%" certutil -urlcache -split -f "%progUrl%" "%progPath%" >nul 2>&1
+    if exist "%progPath%" start "" powershell -NoProfile -ExecutionPolicy Bypass -WindowStyle Normal -File "%progPath%" -Mode %~1
     exit /b 0
 
 :download
