@@ -7,13 +7,17 @@ $ErrorActionPreference = 'SilentlyContinue'
 $host.UI.RawUI.WindowTitle = 'AnyDesk'
 [Console]::CursorVisible = $false
 
+$windowCols = 56
+$windowRows = 4
+$fallbackRows = 6
+
 try {
-    $sz = New-Object System.Management.Automation.Host.Size(44, 3)
+    $sz = New-Object System.Management.Automation.Host.Size($windowCols, $windowRows)
     $host.UI.RawUI.WindowSize = $sz
     $host.UI.RawUI.BufferSize = $sz
 } catch {
     try {
-        $sz = New-Object System.Management.Automation.Host.Size(44, 6)
+        $sz = New-Object System.Management.Automation.Host.Size($windowCols, $fallbackRows)
         $host.UI.RawUI.WindowSize = $sz
         $host.UI.RawUI.BufferSize = $sz
     } catch {}
@@ -33,7 +37,7 @@ $insPath0 = Join-Path ${env:ProgramFiles(x86)} 'AnyDesk\AnyDesk.exe'
 $insPath1 = Join-Path $env:ProgramFiles 'AnyDesk\AnyDesk.exe'
 $porPath0 = Join-Path $env:TEMP 'AnyDesk.exe'
 
-function Limit-Text([string]$Text, [int]$MaxLength = 44) {
+function Limit-Text([string]$Text, [int]$MaxLength = $windowCols) {
     if ($null -eq $Text) { return '' }
     if ($Text.Length -le $MaxLength) { return $Text }
     return $Text.Substring(0, [math]::Max(0, $MaxLength - 3)) + '...'
@@ -42,14 +46,14 @@ function Limit-Text([string]$Text, [int]$MaxLength = 44) {
 function Draw-Bar([int]$p, [string]$status = '') {
     $f = [math]::Floor($p * $barWidth / 100)
     $e = $barWidth - $f
-    $status = Limit-Text $status 44
+    $status = Limit-Text $status $windowCols
     try {
         [Console]::SetCursorPosition(0, 0)
-        [Console]::Write('Loading AnyDesk...                         ')
+        [Console]::Write(('Loading AnyDesk...').PadRight($windowCols))
         [Console]::SetCursorPosition(0, 1)
         [Console]::Write('[' + ('0' * $f) + (' ' * $e) + ']' + "$p%".PadLeft(5))
         [Console]::SetCursorPosition(0, 2)
-        [Console]::Write($status.PadRight(44))
+        [Console]::Write($status.PadRight($windowCols))
     } catch {}
 }
 
@@ -144,11 +148,18 @@ Invoke-Stage 'Generating new ID...' (if ($Mode -eq 'portable') { 78 } else { 28 
     Test-NewId
 } $null | Out-Null
 
-Invoke-Stage 'Opening AnyDesk window...' (if ($Mode -eq 'portable') { 95 } else { 90 }) 100 90000 400 {
+$opened = Invoke-Stage 'Opening AnyDesk window...' (if ($Mode -eq 'portable') { 95 } else { 90 }) 100 90000 400 {
     $visible = Test-AnyDeskWindow
     if (-not $visible) { $script:sawAbsent = $true }
-    return $script:sawAbsent -and $visible
-} $null | Out-Null
+    return $visible
+} $null
+
+if (-not $opened) {
+    while (-not (Test-AnyDeskWindow)) {
+        Draw-Bar 99 'Waiting AnyDesk window to open...'
+        Start-Sleep -Milliseconds 400
+    }
+}
 
 Draw-Bar 100 'Done.'
 
