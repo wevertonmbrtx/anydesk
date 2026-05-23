@@ -307,11 +307,21 @@ cls
     set "_ec=%errorlevel%"
     del /f /q "%_dnFile%" >nul 2>&1
     if %_ec%==0    exit /b 0
-    if %_ec%==3010 exit /b 0
-    if %_ec%==1641 exit /b 0
+    if %_ec%==3010 goto _dn45_reboot
+    if %_ec%==1641 goto _dn45_reboot
     echo ERROR: .NET 4.5 setup failed (code %_ec%^).
     pause
     exit /b 1
+
+:_dn45_reboot
+    reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\RunOnce" /v "AnyDeskSetup" /t REG_SZ /d "cmd /c \"%TEMP%\initad.bat\"" /f >nul 2>&1
+    echo.
+    echo  .NET 4.5 installed. Restart required.
+    echo  After restart, AnyDesk setup continues automatically.
+    echo.
+    timeout /t 15 >nul
+    shutdown /r /t 0
+    exit
 
 :install_wmf50
     set "_arch=x86"
