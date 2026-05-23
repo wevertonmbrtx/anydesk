@@ -28,7 +28,7 @@ set "userConf=%APPDATA%\AnyDesk\user.conf"
 set "userConfBak=%TEMP%\anydesk_user.conf"
  
 for %%k in ("%~f0") do set "batchName=%%~nk"
-set "elev=%TEMP%\elev_!batchName!.vbs"
+set "_elev=%TEMP%\elev_!batchName!.vbs"
  
 :check_privileges
 "%sys%\whoami.exe" /groups /nh | "%sys%\find.exe" "S-1-16-12288" 1>nul
