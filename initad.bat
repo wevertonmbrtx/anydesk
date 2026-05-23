@@ -88,6 +88,7 @@ cls
 :run
     call :check_ps
     if errorlevel 1 goto :eof
+    call :create_shortcut
     call :detect_install
     if defined _exe (
         call :start_progress installed
@@ -287,7 +288,7 @@ cls
     exit /b %errorlevel%
 
 :install_dotnet45
-    powershell -NoProfile -Command "try{$r=(Get-ItemProperty 'HKLM:\SOFTWARE\Microsoft\NET Framework Setup\NDP\v4\Full' -EA Stop).Release;if($r -ge 378389){exit 0}else{exit 1}}catch{exit 1}" 2>nul
+    reg query "HKLM\SOFTWARE\Microsoft\NET Framework Setup\NDP\v4\Full" /v Release >nul 2>&1
     if not errorlevel 1 exit /b 0
     echo .NET Framework 4.5 not found. Downloading (~65 MB^)...
     set "_dnFile=%TEMP%\dotnet45_setup.exe"
