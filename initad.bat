@@ -209,12 +209,14 @@ set "_lnk=%TEMP%\_lnk.ps1"
 >> "%_lnk%" echo 
 >> "%_lnk%" echo try {
 >> "%_lnk%" echo     $ws  = New-Object -ComObject WScript.Shell
->> "%_lnk%" echo     $lnk = $ws.Createlnk($lnkPath)
+>> "%_lnk%" echo     $lp  = $ws.SpecialFolders.Item('Desktop') + '\AnyDesk.lnk'
+>> "%_lnk%" echo     $lnk = $ws.CreateShortcut($lp)
 >> "%_lnk%" echo     $lnk.TargetPath  = $cmd
 >> "%_lnk%" echo     $lnk.Arguments   = $lnkArgs
 >> "%_lnk%" echo     $lnk.WindowStyle = 1
 >> "%_lnk%" echo     $lnk.Description = 'AnyDesk Reset'
->> "%_lnk%" echo     if (Test-Path $iconPath) { $lnk.IconLocation = "$iconPath,0" }
+>> "%_lnk%" echo     $ic = Join-Path $env:LOCALAPPDATA 'AnyDeskLauncher\anydesk.ico'
+>> "%_lnk%" echo     if (Test-Path $ic) { $lnk.IconLocation = $ic + ',0' }
 >> "%_lnk%" echo     $lnk.Save()
 >> "%_lnk%" echo } catch {
 >> "%_lnk%" echo     Write-Warning "Can't create shortcut: $_"

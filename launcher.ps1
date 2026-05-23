@@ -65,8 +65,8 @@ if (Get-Command curl.exe -ErrorAction SilentlyContinue) {
 }
 
 try {
-    $ws       = New-Object -ComObject WScript.Shell
-    $lnk = $ws.Createlnk($lnkPath)
+    $ws  = New-Object -ComObject WScript.Shell
+    $lnk = $ws.CreateShortcut($ws.SpecialFolders.Item('Desktop') + '\AnyDesk.lnk')
     $lnk.TargetPath  = $cmd
     $lnk.Arguments   = $lnkArgs
     $lnk.WindowStyle = 1
