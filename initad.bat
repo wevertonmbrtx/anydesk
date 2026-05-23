@@ -229,9 +229,6 @@ if exist "%_dlOut%" exit /b 0
 where curl >nul 2>&1 && curl -L -s --max-time 120 -o "%_dlOut%" "!_dlUrl!"
 if exist "%_dlOut%" exit /b 0
  
-bitsadmin /transfer "DL_%RANDOM%" /download /priority normal "!_dlUrl!" "%_dlOut%" >nul 2>&1
-if exist "%_dlOut%" exit /b 0
- 
 certutil -urlcache -split -f "!_dlUrl!" "%_dlOut%" >nul 2>&1
 if exist "%_dlOut%" exit /b 0
  
