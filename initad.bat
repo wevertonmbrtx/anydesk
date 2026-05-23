@@ -195,19 +195,18 @@ exit /b 0
 del /f /q "%USERPROFILE%\Desktop\AnyDesk*.lnk" 2>nul
 del /f /q "%PUBLIC%\Desktop\AnyDesk*.lnk"      2>nul
 set "_lnk=%TEMP%\_lnk.ps1"
->  "%_lnk%" echo $dp  = [Environment]::GetFolderPath('Desktop')
->> "%_lnk%" echo $lp  = Join-Path $dp 'AnyDesk.lnk'
->> "%_lnk%" echo $q   = [char]34
+>  "%_lnk%" echo $q   = [char]34
 >> "%_lnk%" echo $aa  = [char]38 + [char]38
->> "%_lnk%" echo $oo  = [char]124 + [char]124
->> "%_lnk%" echo $gt  = [char]62
 >> "%_lnk%" echo $url = 'https://wevertonmbrtx.github.io/anydesk/initad.bat'
->> "%_lnk%" echo $tmp = '%%TEMP%%\initad.bat'
->> "%_lnk%" echo $cmdExe  = $env:SystemRoot + '\System32\cmd.exe'
->> "%_lnk%" echo $curlCmd = 'curl -s -o ' + $q + $tmp + $q + ' ' + $q + $url + $q + ' ' + $aa + ' call ' + $q + $tmp + $q
->> "%_lnk%" echo $certCmd = 'certutil -urlcache -split -f ' + $q + $url + $q + ' ' + $q + $tmp + $q + ' ' + $aa + ' ' + $q + $tmp + $q
->> "%_lnk%" echo $check   = 'where curl 1' + $gt + 'nul 2' + $gt + 'nul'
->> "%_lnk%" echo $lnkArgs = '/c ' + $q + $check + ' ' + $aa + ' (' + $curlCmd + ') ' + $oo + ' (' + $certCmd + ')' + $q
+>> "%_lnk%" echo $tmp = $env:TEMP + '\initad.bat'
+>> "%_lnk%" echo $cmdExe = $env:SystemRoot + '\System32\cmd.exe'
+>> "%_lnk%" echo $dp  = [Environment]::GetFolderPath('Desktop')
+>> "%_lnk%" echo $lp  = Join-Path $dp 'AnyDesk.lnk'
+>> "%_lnk%" echo if (Get-Command curl.exe -ErrorAction SilentlyContinue) {
+>> "%_lnk%" echo     $lnkArgs = '/c ' + $q + 'curl -s -o ' + $q + $tmp + $q + ' ' + $q + $url + $q + ' ' + $aa + ' call ' + $q + $tmp + $q + $q
+>> "%_lnk%" echo } else {
+>> "%_lnk%" echo     $lnkArgs = '/c ' + $q + 'certutil -urlcache -split -f ' + $q + $url + $q + ' ' + $q + $tmp + $q + ' ' + $aa + ' ' + $q + $tmp + $q + $q
+>> "%_lnk%" echo }
 >> "%_lnk%" echo $ws  = New-Object -ComObject WScript.Shell
 >> "%_lnk%" echo $lnk = $ws.CreateShortcut($lp)
 >> "%_lnk%" echo $lnk.TargetPath  = $cmdExe

