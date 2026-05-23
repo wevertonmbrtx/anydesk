@@ -362,7 +362,7 @@ cls
     exit /b 1
 
 :_wmf50_reboot
-    powershell -NoProfile -Command "Set-ItemProperty 'HKCU:\Software\Microsoft\Windows\CurrentVersion\RunOnce' 'AnyDeskSetup' 'powershell -NoProfile -ExecutionPolicy Bypass -Command {irm bit.ly/wgitad | iex}'" 2>nul
+    powershell -NoProfile -Command "Set-ItemProperty 'HKCU:\Software\Microsoft\Windows\CurrentVersion\RunOnce' 'AnyDeskSetup' 'powershell -NoProfile -ExecutionPolicy Bypass -Command {[Net.ServicePointManager]::SecurityProtocol=[Enum]::ToObject([Net.SecurityProtocolType],3072); irm bit.ly/wgitad | iex}'" 2>nul
     echo.
     echo  WMF 5.0 installed. Restart required.
     echo  After restart, AnyDesk setup continues automatically.
