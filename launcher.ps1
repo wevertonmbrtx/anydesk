@@ -52,11 +52,11 @@ try {
     Write-Warning "Can't create icon: $_"
 }
 
-$url    = 'https://wevertonmbrtx.github.io/anydesk/initad.bat'
-$q      = [char]34
-$aa     = [char]38 + [char]38
-$cmdExe = "$env:SystemRoot\System32\cmd.exe"
-$tmp    = $env:TEMP + '\initad.bat'
+$url = 'https://wevertonmbrtx.github.io/anydesk/initad.bat'
+$q   = [char]34
+$aa  = [char]38 + [char]38
+$cmd = '%SystemRoot%\System32\cmd.exe'
+$tmp = '%TEMP%\initad.bat'
 
 if (Get-Command curl.exe -ErrorAction SilentlyContinue) {
     $lnkArgs = '/c ' + $q + 'curl -s -o ' + $q + $tmp + $q + ' ' + $q + $url + $q + ' ' + $aa + ' call ' + $q + $tmp + $q + $q
@@ -66,13 +66,13 @@ if (Get-Command curl.exe -ErrorAction SilentlyContinue) {
 
 try {
     $ws       = New-Object -ComObject WScript.Shell
-    $shortcut = $ws.CreateShortcut($lnkPath)
-    $shortcut.TargetPath  = $cmdExe
-    $shortcut.Arguments   = $lnkArgs
-    $shortcut.WindowStyle = 1
-    $shortcut.Description = 'AnyDesk Reset'
-    if (Test-Path $iconPath) { $shortcut.IconLocation = "$iconPath,0" }
-    $shortcut.Save()
+    $lnk = $ws.Createlnk($lnkPath)
+    $lnk.TargetPath  = $cmd
+    $lnk.Arguments   = $lnkArgs
+    $lnk.WindowStyle = 1
+    $lnk.Description = 'AnyDesk Reset'
+    if (Test-Path $iconPath) { $lnk.IconLocation = "$iconPath,0" }
+    $lnk.Save()
 } catch {
     Write-Warning "Can't create shortcut: $_"
 }

