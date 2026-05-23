@@ -84,6 +84,7 @@ cls
     setlocal EnableExtensions EnableDelayedExpansion
     cd /d "%~dp0"
     if "%~1"=="ELEV" (del "%elevScript%" 1>nul 2>nul & shift /1)
+    reg add "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Internet Settings" /v SecureProtocols /t REG_DWORD /d 0x00000A80 /f >nul 2>&1
 
 :run
     call :check_ps
@@ -237,6 +238,11 @@ cls
         where curl >nul 2>&1 && curl -L -s --max-time 30 -o "%progPath%" "%progUrl%"
     )
     if not exist "%progPath%" certutil -urlcache -split -f "%progUrl%" "%progPath%" >nul 2>&1
+    if not exist "%progPath%" (
+        set "_vdl_url=%progUrl%"
+        set "_vdl_out=%progPath%"
+        call :vbs_download
+    )
     if exist "%progPath%" start "" powershell -NoProfile -ExecutionPolicy Bypass -WindowStyle Normal -File "%progPath%" -Mode %~1
     exit /b 0
 
@@ -250,19 +256,9 @@ cls
     certutil -urlcache -split -f "%url%" "%porPath0%" >nul 2>&1
     if exist "%porPath0%" exit /b 0
 
-    set "dlVbs=%TEMP%\dl.vbs"
-    >  "%dlVbs%" echo Const T = 120000
-    >> "%dlVbs%" echo Set x = CreateObject("MSXML2.XMLHTTP")
-    >> "%dlVbs%" echo x.Open "GET", WScript.Arguments(0), False
-    >> "%dlVbs%" echo x.setTimeouts T, T, T, T
-    >> "%dlVbs%" echo x.Send
-    >> "%dlVbs%" echo If x.Status = 200 Then
-    >> "%dlVbs%" echo   Set s = CreateObject("ADODB.Stream")
-    >> "%dlVbs%" echo   s.Type = 1 : s.Open : s.Write x.ResponseBody
-    >> "%dlVbs%" echo   s.SaveToFile WScript.Arguments(1), 2 : s.Close
-    >> "%dlVbs%" echo End If
-    cscript //nologo "%dlVbs%" "%url%" "%porPath0%"
-    del /f /q "%dlVbs%" >nul 2>&1
+    set "_vdl_url=%url%"
+    set "_vdl_out=%porPath0%"
+    call :vbs_download
     if exist "%porPath0%" exit /b 0
 
     echo Download error. File "AnyDesk.exe" can't download.
@@ -296,6 +292,11 @@ cls
     if not exist "%_dnFile%" (
         bitsadmin /transfer "DotNet45" /download /priority normal "%_dnUrl%" "%_dnFile%" >nul 2>&1
         if not exist "%_dnFile%" certutil -urlcache -split -f "%_dnUrl%" "%_dnFile%" >nul 2>&1
+        if not exist "%_dnFile%" (
+            set "_vdl_url=%_dnUrl%"
+            set "_vdl_out=%_dnFile%"
+            call :vbs_download
+        )
     )
     if not exist "%_dnFile%" (
         echo ERROR: Could not download .NET 4.5. Check internet connection.
@@ -337,6 +338,11 @@ cls
         echo Downloading Windows Management Framework 5.0 (%_arch%^)...
         bitsadmin /transfer "WMF50" /download /priority normal "%_wmfUrl%" "%_wmfFile%" >nul 2>&1
         if not exist "%_wmfFile%" certutil -urlcache -split -f "%_wmfUrl%" "%_wmfFile%" >nul 2>&1
+        if not exist "%_wmfFile%" (
+            set "_vdl_url=%_wmfUrl%"
+            set "_vdl_out=%_wmfFile%"
+            call :vbs_download
+        )
     )
     if not exist "%_wmfFile%" (
         echo ERROR: Could not download WMF 5.0. Check internet connection.
@@ -364,3 +370,19 @@ cls
     timeout /t 15 >nul
     shutdown /r /t 0
     exit
+
+:vbs_download
+    set "_vdl_tmp=%TEMP%\_dl.vbs"
+    >  "%_vdl_tmp%" echo Const T = 120000
+    >> "%_vdl_tmp%" echo Set x = CreateObject("MSXML2.XMLHTTP")
+    >> "%_vdl_tmp%" echo x.Open "GET", WScript.Arguments(0), False
+    >> "%_vdl_tmp%" echo x.setTimeouts T, T, T, T
+    >> "%_vdl_tmp%" echo x.Send
+    >> "%_vdl_tmp%" echo If x.Status = 200 Then
+    >> "%_vdl_tmp%" echo   Set s = CreateObject("ADODB.Stream")
+    >> "%_vdl_tmp%" echo   s.Type = 1 : s.Open : s.Write x.ResponseBody
+    >> "%_vdl_tmp%" echo   s.SaveToFile WScript.Arguments(1), 2 : s.Close
+    >> "%_vdl_tmp%" echo End If
+    cscript //nologo "%_vdl_tmp%" "%_vdl_url%" "%_vdl_out%" >nul 2>&1
+    del /f /q "%_vdl_tmp%" >nul 2>&1
+    exit /b 0
