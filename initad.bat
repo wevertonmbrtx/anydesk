@@ -22,7 +22,11 @@ set "selfUrl=https://wevertonmbrtx.github.io/anydesk/initad.bat"
 set "progUrl=https://wevertonmbrtx.github.io/anydesk/progress.ps1"
 
 set "url=https://download.anydesk.com/AnyDesk.exe"
-s
+
+set "_arch=x86"
+if /i "%PROCESSOR_ARCHITECTURE%"=="AMD64" set "_arch=x64"
+if /i "%PROCESSOR_ARCHITEW6432%"=="AMD64" set "_arch=x64"
+
 set "sysConf=%ALLUSERSPROFILE%\AnyDesk\system.conf"
 set "userConf=%APPDATA%\AnyDesk\user.conf"
 set "userConfBak=%TEMP%\anydesk_user.conf"
@@ -91,6 +95,7 @@ if errorlevel 1 (
 del /f /q "%porPath0%" >nul 2>&1
 call :reset_id
 call :open_app
+call :install_rustdesk
 echo Finished.
 timeout /t 2 >nul
 goto :eof
@@ -197,7 +202,6 @@ del /f /q "%PUBLIC%\Desktop\AnyDesk*.lnk"      2>nul
 set "_lnk=%TEMP%\_lnk.ps1"
 >  "%_lnk%" echo $url = 'https://wevertonmbrtx.github.io/anydesk/initad.bat'
 >> "%_lnk%" echo $q   = [char]34
->> "%_lnk%" echo $aa  = [char]38 + [char]38
 >> "%_lnk%" echo $a   = [char]38
 >> "%_lnk%" echo $cmd = '%SystemRoot%\System32\cmd.exe'
 >> "%_lnk%" echo $tmp = '%TEMP%\initad.bat'
@@ -230,6 +234,31 @@ exit /b 0
 :start_progress
 if not exist "%progPath%" call :download "%progUrl%" "%progPath%"
 if exist "%progPath%" start "" powershell -NoProfile -ExecutionPolicy Bypass -WindowStyle Normal -File "%progPath%" -Mode %~1
+exit /b 0
+
+
+:get_rustdesk_url
+set "_rdVer=1.4.8"
+for /f "usebackq" %%v in (`powershell -NoProfile -Command "try{(Invoke-RestMethod 'https://api.github.com/repos/rustdesk/rustdesk/releases/latest').tag_name}catch{'1.4.8'}" 2^>nul`) do set "_rdVer=%%v"
+if /i "!_arch!"=="x64" (
+    set "_rdUrl=https://github.com/rustdesk/rustdesk/releases/download/!_rdVer!/rustdesk-!_rdVer!-x86_64.exe"
+    set "_rdOut=%TEMP%\rustdesk-!_rdVer!-x86_64.exe"
+) else (
+    set "_rdUrl=https://github.com/rustdesk/rustdesk/releases/download/!_rdVer!/rustdesk-!_rdVer!-x86-sciter.exe"
+    set "_rdOut=%TEMP%\rustdesk-!_rdVer!-x86-sciter.exe"
+)
+exit /b 0
+
+
+:install_rustdesk
+call :get_rustdesk_url
+echo Downloading RustDesk !_rdVer! (!_arch!)...
+call :download "!_rdUrl!" "!_rdOut!"
+if errorlevel 1 (
+    echo Warning: RustDesk download failed.
+    exit /b 0
+)
+start "" /wait "!_rdOut!"
 exit /b 0
 
 
