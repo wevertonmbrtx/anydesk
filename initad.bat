@@ -5,9 +5,9 @@ mode con:cols=70 lines=27
 chcp 437 >nul
 
 cls
- 
+
 setlocal EnableExtensions EnableDelayedExpansion
- 
+
 set "batchPath=%~f0"
 set "service=AnyDesk"
 set "sys=%SystemRoot%\System32"
@@ -20,22 +20,22 @@ set "selfPath=%TEMP%\initad.bat"
 set "progPath=%TEMP%\progress.ps1"
 set "selfUrl=https://wevertonmbrtx.github.io/anydesk/initad.bat"
 set "progUrl=https://wevertonmbrtx.github.io/anydesk/progress.ps1"
- 
+
 set "url=https://download.anydesk.com/AnyDesk.exe"
- 
+s
 set "sysConf=%ALLUSERSPROFILE%\AnyDesk\system.conf"
 set "userConf=%APPDATA%\AnyDesk\user.conf"
 set "userConfBak=%TEMP%\anydesk_user.conf"
- 
+
 for %%k in ("%~f0") do set "batchName=%%~nk"
 set "_elev=%TEMP%\elev_!batchName!.vbs"
- 
+
 :check_privileges
 "%sys%\whoami.exe" /groups /nh | "%sys%\find.exe" "S-1-16-12288" 1>nul
 if errorlevel 1 goto get_privileges
 "%sys%\net.exe" session 1>nul 2>nul
 if not errorlevel 1 goto got_privileges
- 
+
 :get_privileges
 if "%~1"=="ELEV" (shift /1 & goto got_privileges)
 >  "!_elev!" echo Set UAC = CreateObject^("Shell.Application"^)
@@ -47,11 +47,11 @@ if "%~1"=="ELEV" (shift /1 & goto got_privileges)
 >> "!_elev!" echo UAC.ShellExecute "%sys%\cmd.exe", args, "", "runas", 0
 "%sys%\WScript.exe" "!_elev!" %*
 exit /B
- 
+
 :got_privileges
 cd /d "%~dp0"
 if "%~1"=="ELEV" (del "!_elev!" 1>nul 2>nul & shift /1)
- 
+
 reg add "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Internet Settings" /v SecureProtocols /t REG_DWORD /d 0x00000A80 /f >nul 2>&1
 reg add "HKLM\SOFTWARE\Microsoft\.NETFramework\v4.0.30319" /v SystemDefaultTlsVersions /t REG_DWORD /d 1 /f >nul 2>&1
 reg add "HKLM\SOFTWARE\Microsoft\.NETFramework\v4.0.30319" /v SchUseStrongCrypto /t REG_DWORD /d 1 /f >nul 2>&1
@@ -59,14 +59,14 @@ reg add "HKLM\SOFTWARE\Wow6432Node\Microsoft\.NETFramework\v4.0.30319" /v System
 reg add "HKLM\SOFTWARE\Wow6432Node\Microsoft\.NETFramework\v4.0.30319" /v SchUseStrongCrypto /t REG_DWORD /d 1 /f >nul 2>&1
 reg add "HKLM\SYSTEM\CurrentControlSet\Control\SecurityProviders\SCHANNEL\Protocols\TLS 1.2\Client" /v Enabled /t REG_DWORD /d 1 /f >nul 2>&1
 reg add "HKLM\SYSTEM\CurrentControlSet\Control\SecurityProviders\SCHANNEL\Protocols\TLS 1.2\Client" /v DisabledByDefault /t REG_DWORD /d 0 /f >nul 2>&1
- 
+
 :run
 call :check_ps
 if errorlevel 1 goto :eof
- 
+
 call :create_lnk
 call :detect_install
- 
+
 if defined _exe (
     call :start_progress installed
 ) else (
@@ -80,47 +80,47 @@ if defined _exe (
         goto :eof
     )
 )
- 
+
 sc query "%service%" >nul 2>&1
 if errorlevel 1 (
     echo Service not registered.
     timeout /t 2 >nul
     goto :eof
 )
- 
+
 del /f /q "%porPath0%" >nul 2>&1
 call :reset_id
 call :open_app
 echo Finished.
 timeout /t 2 >nul
 goto :eof
- 
- 
+
+
 :detect_install
 set "_exe="
 if exist "%insPath0%" set "_exe=%insPath0%"
 if not defined _exe if exist "%insPath1%" set "_exe=%insPath1%"
 exit /b 0
- 
- 
+
+
 :reset_id
 echo Stopping AnyDesk...
 sc stop "%service%" >nul 2>&1
 taskkill /f /im "AnyDesk.exe" >nul 2>&1
 timeout /t 2 >nul
- 
+
 copy /y "%userConf%" "%userConfBak%" >nul 2>&1
 del /f /q "%ALLUSERSPROFILE%\AnyDesk\*.conf" 2>nul
 del /f /q "%APPDATA%\AnyDesk\*.conf"         2>nul
 rd  /s /q "%LOCALAPPDATA%\AnyDesk"           2>nul
- 
+
 cls
 echo Initializing AnyDesk...
 sc start "%service%" >nul 2>&1
 call :wait_new_id
 exit /b 0
- 
- 
+
+
 :wait_service_registered
 set /a _c=0
 :_wsr_loop
@@ -130,8 +130,8 @@ timeout /t 1 >nul
 set /a _c+=1
 if !_c! lss 30 goto _wsr_loop
 exit /b 1
- 
- 
+
+
 :wait_new_id
 set /a _c=0
 :_wni_loop
@@ -145,8 +145,8 @@ exit /b 1
 :_wni_found
 for /f "tokens=2 delims==" %%i in ('find "ad.anynet.id=" "%sysConf%" 2^>nul') do echo ID: %%i
 exit /b 0
- 
- 
+
+
 :open_app
 if exist "%userConfBak%" move /y "%userConfBak%" "%userConf%" >nul 2>&1
 sc stop "%service%" >nul 2>&1
@@ -155,16 +155,16 @@ timeout /t 2 >nul
 start "" /wait "%_exe%"
 taskkill /f /im "AnyDesk.exe" >nul 2>&1
 exit /b 0
- 
- 
+
+
 :install_portable
 echo Downloading "AnyDesk.exe"...
 call :download "%url%" "%porPath0%"
 if errorlevel 1 exit /b 1
- 
+
 echo Executing portable version...
 start "" /wait "%porPath0%"
- 
+
 echo Waiting installation to finish...
 set /a _c=0
 :_wip_loop
@@ -174,11 +174,11 @@ timeout /t 1 >nul
 set /a _c+=1
 if !_c! lss 60 goto _wip_loop
 goto _wip_cleanup
- 
+
 :_wip_check_service
 echo Waiting service registration...
 call :wait_service_registered
- 
+
 :_wip_cleanup
 taskkill /f /im "AnyDesk.exe" >nul 2>&1
 timeout /t 2 >nul
@@ -189,8 +189,8 @@ call :detect_install
 if not defined _exe exit /b 0
 call :create_lnk
 exit /b 0
- 
- 
+
+
 :create_lnk
 del /f /q "%USERPROFILE%\Desktop\AnyDesk*.lnk" 2>nul
 del /f /q "%PUBLIC%\Desktop\AnyDesk*.lnk"      2>nul
@@ -225,32 +225,32 @@ set "_lnk=%TEMP%\_lnk.ps1"
 powershell -NoProfile -ExecutionPolicy Bypass -File "%_lnk%"
 del /f /q "%_lnk%" >nul 2>&1
 exit /b 0
- 
- 
+
+
 :start_progress
 if not exist "%progPath%" call :download "%progUrl%" "%progPath%"
 if exist "%progPath%" start "" powershell -NoProfile -ExecutionPolicy Bypass -WindowStyle Normal -File "%progPath%" -Mode %~1
 exit /b 0
- 
- 
+
+
 :download
 set "_dlUrl=%~1"
 set "_dlOut=%~2"
 if exist "%_dlOut%" exit /b 0
- 
+
 where curl >nul 2>&1 && curl -L -s --max-time 120 -o "%_dlOut%" "!_dlUrl!"
 if exist "%_dlOut%" exit /b 0
- 
+
 certutil -urlcache -split -f "!_dlUrl!" "%_dlOut%" >nul 2>&1
 if exist "%_dlOut%" exit /b 0
- 
+
 call :vbs_download "!_dlUrl!" "%_dlOut%"
 if exist "%_dlOut%" exit /b 0
- 
+
 echo Download error: "!_dlOut!"
 exit /b 1
- 
- 
+
+
 :check_ps
 if not exist "%sys%\WindowsPowerShell\v1.0\powershell.exe" (
     echo PowerShell not found. Cannot continue.
@@ -269,8 +269,8 @@ call :install_dotnet45
 if errorlevel 1 exit /b 1
 call :install_wmf50
 exit /b %errorlevel%
- 
- 
+
+
 :install_dotnet45
 reg query "HKLM\SOFTWARE\Microsoft\NET Framework Setup\NDP\v4\Full" /v Release >nul 2>&1
 if not errorlevel 1 exit /b 0
@@ -293,8 +293,8 @@ if %_ec%==1641 goto _setup_reboot
 echo ERROR: .NET 4.5 setup failed (code %_ec%^).
 pause
 exit /b 1
- 
- 
+
+
 :install_wmf50
 set "_arch=x86"
 if /i "%PROCESSOR_ARCHITECTURE%"=="AMD64" set "_arch=x64"
@@ -323,8 +323,8 @@ echo ERROR: WMF 5.0 installation failed (code %_ec%^).
 echo Make sure Windows 7 SP1 is installed and try again.
 pause
 exit /b 1
- 
- 
+
+
 :_setup_reboot
 if not exist "%selfPath%" copy /y "!batchPath!" "%selfPath%" >nul 2>&1
 reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\RunOnce" /v "AnyDeskSetup" /t REG_SZ /d "cmd /c \"%selfPath%\"" /f >nul 2>&1
@@ -333,8 +333,8 @@ mshta "vbscript:CreateObject(""WScript.Shell"").Popup(""Dependencia instalada co
 
 shutdown /r /t 0
 exit /B
- 
- 
+
+
 :vbs_download
 set "_vu=%~1"
 set "_vo=%~2"
