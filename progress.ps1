@@ -80,7 +80,7 @@ function Limit-Text([string]$Text, [int]$MaxLength = $windowCols) {
     return $Text.Substring(0, [math]::Max(0, $MaxLength - 3)) + '...'
 }
 
-function Draw-Bar([int]$p, [string]$status = '') {
+function Write-Bar([int]$p, [string]$status = '') {
     $f      = [math]::Floor($p * $barWidth / 100)
     $e      = $barWidth - $f
     $status = Limit-Text $status $windowCols
@@ -130,13 +130,13 @@ function Invoke-Stage {
 
     while ($true) {
         if (& $DoneCondition) {
-            Draw-Bar $EndPct $Label
+            Write-Bar $EndPct $Label
             return $true
         }
 
         $elapsedMs = [int]$sw.ElapsedMilliseconds
         if ($elapsedMs -ge $TimeoutMs) {
-            Draw-Bar $EndPct $Label
+            Write-Bar $EndPct $Label
             return $false
         }
 
@@ -150,12 +150,12 @@ function Invoke-Stage {
         $span  = [math]::Max(1, $EndPct - $StartPct)
         $pct   = [math]::Max($StartPct, [math]::Min($EndPct - 1, [int][math]::Floor($StartPct + $span * $ratio)))
 
-        Draw-Bar $pct $Label
+        Write-Bar $pct $Label
         Start-Sleep -Milliseconds $PollMs
     }
 }
 
-Draw-Bar 0 'Initializing...'
+Write-Bar 0 'Initializing...'
 
 if ($Mode -eq 'portable') {
     Invoke-Stage 'Downloading AnyDesk...' 0 30 180000 400 {
@@ -171,12 +171,12 @@ if ($Mode -eq 'portable') {
 
     if (-not $opened) {
         while (-not (Test-AnyDeskWindow)) {
-            Draw-Bar 99 'Opening AnyDesk...'
+            Write-Bar 99 'Opening AnyDesk...'
             Start-Sleep -Milliseconds 400
         }
     }
 
-    Draw-Bar 100 'Done.'
+    Write-Bar 100 'Done.'
     Start-Sleep -Milliseconds 1200
     [Console]::CursorVisible = $true
     exit 0
@@ -196,11 +196,11 @@ $opened = Invoke-Stage 'Opening AnyDesk...' 30 100 120000 400 {
 
 if (-not $opened) {
     while (-not (Test-AnyDeskWindow)) {
-        Draw-Bar 99 'Opening AnyDesk...'
+        Write-Bar 99 'Opening AnyDesk...'
         Start-Sleep -Milliseconds 400
     }
 }
 
-Draw-Bar 100 'Done.'
+Write-Bar 100 'Done.'
 Start-Sleep -Milliseconds 1200
 [Console]::CursorVisible = $true
