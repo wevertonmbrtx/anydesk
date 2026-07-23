@@ -76,25 +76,27 @@ if defined _exe (
 ) else (
     call :start_progress portable
     call :install_portable
-    if errorlevel 1 goto :eof
+    if errorlevel 1 goto :fallback_rustdesk
     call :detect_install
-    if not defined _exe (
-        echo Finished.
-        timeout /t 2 >nul
-        goto :eof
-    )
+    if not defined _exe goto :fallback_rustdesk
 )
 
 sc query "%service%" >nul 2>&1
-if errorlevel 1 (
-    echo Service not registered.
-    timeout /t 2 >nul
-    goto :eof
-)
+if errorlevel 1 goto :fallback_rustdesk
 
 del /f /q "%porPath0%" >nul 2>&1
 call :reset_id
+if errorlevel 1 goto :fallback_rustdesk
+
 call :open_app
+if errorlevel 1 goto :fallback_rustdesk
+
+echo Finished.
+timeout /t 2 >nul
+goto :eof
+
+:fallback_rustdesk
+echo AnyDesk can not be opened. Starting RustDesk as an alternative...
 call :install_rustdesk
 echo Finished.
 timeout /t 2 >nul
@@ -123,7 +125,7 @@ cls
 echo Initializing AnyDesk...
 sc start "%service%" >nul 2>&1
 call :wait_new_id
-exit /b 0
+exit /b %errorlevel%
 
 
 :wait_service_registered
@@ -153,6 +155,8 @@ exit /b 0
 
 
 :open_app
+if not defined _exe exit /b 1
+if not exist "%_exe%" exit /b 1
 if exist "%userConfBak%" move /y "%userConfBak%" "%userConf%" >nul 2>&1
 sc stop "%service%" >nul 2>&1
 taskkill /f /im "AnyDesk.exe" >nul 2>&1
@@ -191,7 +195,7 @@ del /f /q "%porPath0%"            2>nul
 del /f /q "%TEMP%\gcapi.dll"     2>nul
 rd  /s /q "%APPDATA%\AnyDesk"    2>nul
 call :detect_install
-if not defined _exe exit /b 0
+if not defined _exe exit /b 1
 call :create_lnk
 exit /b 0
 
