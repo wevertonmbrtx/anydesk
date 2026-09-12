@@ -16,7 +16,7 @@ try {
     $html = $webClient.DownloadString('https://play.google.com/store/apps/details?id=com.anydesk.anydeskandroid')
 
     if ($html -match '(https://play-lh\.googleusercontent\.com/[^\s"&]+)') {
-        $pngUrl   = $matches[1] + '=s256'
+        $pngUrl   = ($matches[1] -replace '=.*$', '') + '=s256'
         $pngBytes = $webClient.DownloadData($pngUrl)
 
         $width  = 256

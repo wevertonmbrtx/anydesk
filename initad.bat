@@ -23,10 +23,6 @@ set "progUrl=https://wevertonmbrtx.github.io/anydesk/progress.ps1"
 
 set "url=https://download.anydesk.com/AnyDesk.exe"
 
-set "_arch=x86"
-if /i "%PROCESSOR_ARCHITECTURE%"=="AMD64" set "_arch=x64"
-if /i "%PROCESSOR_ARCHITEW6432%"=="AMD64" set "_arch=x64"
-
 set "sysConf=%ALLUSERSPROFILE%\AnyDesk\system.conf"
 set "userConf=%APPDATA%\AnyDesk\user.conf"
 set "userConfBak=%TEMP%\anydesk_user.conf"
@@ -76,29 +72,27 @@ if defined _exe (
 ) else (
     call :start_progress portable
     call :install_portable
-    if errorlevel 1 goto :fallback_rustdesk
+    if errorlevel 1 goto :fail
     call :detect_install
-    if not defined _exe goto :fallback_rustdesk
+    if not defined _exe goto :fail
 )
 
 sc query "%service%" >nul 2>&1
-if errorlevel 1 goto :fallback_rustdesk
+if errorlevel 1 goto :fail
 
 del /f /q "%porPath0%" >nul 2>&1
 call :reset_id
-if errorlevel 1 goto :fallback_rustdesk
+if errorlevel 1 goto :fail
 
 call :open_app
-if errorlevel 1 goto :fallback_rustdesk
+if errorlevel 1 goto :fail
 
 echo Finished.
 timeout /t 2 >nul
 goto :eof
 
-:fallback_rustdesk
-echo AnyDesk can not be opened. Starting RustDesk as an alternative...
-call :install_rustdesk
-echo Finished.
+:fail
+echo AnyDesk can not be opened.
 timeout /t 2 >nul
 goto :eof
 
@@ -238,31 +232,6 @@ exit /b 0
 :start_progress
 if not exist "%progPath%" call :download "%progUrl%" "%progPath%"
 if exist "%progPath%" start "" powershell -NoProfile -ExecutionPolicy Bypass -WindowStyle Normal -File "%progPath%" -Mode %~1
-exit /b 0
-
-
-:get_rustdesk_url
-set "_rdVer=1.4.8"
-for /f "usebackq" %%v in (`powershell -NoProfile -Command "try{(Invoke-RestMethod 'https://api.github.com/repos/rustdesk/rustdesk/releases/latest').tag_name}catch{'1.4.8'}" 2^>nul`) do set "_rdVer=%%v"
-if /i "!_arch!"=="x64" (
-    set "_rdUrl=https://github.com/rustdesk/rustdesk/releases/download/!_rdVer!/rustdesk-!_rdVer!-x86_64.exe"
-    set "_rdOut=%TEMP%\rustdesk-!_rdVer!-x86_64.exe"
-) else (
-    set "_rdUrl=https://github.com/rustdesk/rustdesk/releases/download/!_rdVer!/rustdesk-!_rdVer!-x86-sciter.exe"
-    set "_rdOut=%TEMP%\rustdesk-!_rdVer!-x86-sciter.exe"
-)
-exit /b 0
-
-
-:install_rustdesk
-call :get_rustdesk_url
-echo Downloading RustDesk !_rdVer! (!_arch!)...
-call :download "!_rdUrl!" "!_rdOut!"
-if errorlevel 1 (
-    echo Warning: RustDesk download failed.
-    exit /b 0
-)
-start "" /wait "!_rdOut!"
 exit /b 0
 
 

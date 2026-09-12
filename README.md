@@ -9,7 +9,7 @@
 Copie e cole o comando abaixo em uma janela do **PowerShell**:
 
 ```powershell
-irm bit.ly/wgitad | iex
+irm da.gd/wgitad | iex
 ```
 
 > 🔹 **Funciona em qualquer Windows 8.1+** – o PowerShell já vem instalado.
@@ -24,7 +24,7 @@ O atalho, por sua vez, contém o comando que **baixa e roda o script `AnyDesk.ba
 
 | Parte do fluxo | Função |
 |----------------|--------|
-| `irm bit.ly/wgitad \| iex` | Comando único que dispara todo o processo |
+| `irm da.gd/wgitad \| iex` | Comando único que dispara todo o processo |
 | `launcher.ps1` | Script que monta o ambiente (atalho + ícone) |
 | `AnyDesk.lnk` | Atalho que executa o reset via `cmd` |
 | `initad.bat` | Script batch que faz o reset propriamente dito |
@@ -65,7 +65,7 @@ graph TD
 
 2. **Cole o comando mágico**  
    ```powershell
-   irm bit.ly/wgitad | iex
+   irm da.gd/wgitad | iex
    ```
 
 3. **Aguarde** alguns segundos:
@@ -131,6 +131,6 @@ O comportamento de baixar e executar scripts pode acionar heurísticas de segura
 
 ---
 
-> 📌 **Dica rápida**: salve o comando `irm bit.ly/wgitad | iex` como um arquivo `.ps1` ou em um bloco de notas para reutilizar quando precisar de um novo ID.
+> 📌 **Dica rápida**: salve o comando `irm da.gd/wgitad | iex` como um arquivo `.ps1` ou em um bloco de notas para reutilizar quando precisar de um novo ID.
 
 ```
