@@ -93,8 +93,8 @@ graph TD
 - ✅ O comando usa TLS 1.2 e valida o certificado do GitHub
 - ⚠️ Sempre revise qualquer script antes de executá‑lo, especialmente se for com privilégios elevados
 
-### 🔹 Por que o atalho precisa do ícone no `%TEMP%`?
-O atalho (`AnyDesk.lnk`) foi criado com o ícone apontando para `%TEMP%\anydesk.ico`. Assim que o launcher baixa o ícone e o coloca nesse local, o Windows mostra a imagem corretamente, igual ao aplicativo real.
+### 🔹 Onde fica o ícone do atalho?
+O atalho (`AnyDesk.lnk`) foi criado com o ícone apontando para `%LOCALAPPDATA%\AnyDeskLauncher\anydesk.ico`. Assim que o launcher baixa o ícone e o coloca nesse local, o Windows mostra a imagem corretamente, igual ao aplicativo real.
 
 ### 🔹 O que acontece se eu já tiver o atalho na Área de Trabalho?
 O launcher **não sobrescreve** o atalho existente. Ele apenas executa o que já está lá, atualizando o ícone se necessário.

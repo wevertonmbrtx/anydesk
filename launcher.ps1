@@ -8,46 +8,40 @@ $lnkPath   = Join-Path $desktop 'AnyDesk.lnk'
 $batchPath = Join-Path $env:TEMP 'initad.bat'
 $progPath  = Join-Path $env:TEMP 'progress.ps1'
 $batchUrl  = 'https://wevertonmbrtx.github.io/anydesk/initad.bat'
+$iconUrl   = 'https://dl.flathub.org/repo/appstream/x86_64/icons/128x128/com.anydesk.Anydesk.png'
 
 $webClient = New-Object Net.WebClient
 $webClient.Headers.Add('User-Agent', 'Mozilla/5.0')
 
 try {
-    $html = $webClient.DownloadString('https://play.google.com/store/apps/details?id=com.anydesk.anydeskandroid')
-
-    if ($html -match '(https://play-lh\.googleusercontent\.com/[^\s"&]+)') {
-        $pngUrl   = ($matches[1] -replace '=.*$', '') + '=s256'
-        $pngBytes = $webClient.DownloadData($pngUrl)
-
-        $width  = 256
-        $height = 256
-        if ($width  -ge 256) { $width  = 0 }
-        if ($height -ge 256) { $height = 0 }
-
-        $imageSize = $pngBytes.Length
-        $offset    = 6 + 16
-
-        $icoBytes = New-Object System.Collections.Generic.List[byte]
-        $icoBytes.AddRange([System.BitConverter]::GetBytes([UInt16]0))
-        $icoBytes.AddRange([System.BitConverter]::GetBytes([UInt16]1))
-        $icoBytes.AddRange([System.BitConverter]::GetBytes([UInt16]1))
-        $icoBytes.Add([byte]$width)
-        $icoBytes.Add([byte]$height)
-        $icoBytes.Add([byte]0)
-        $icoBytes.Add([byte]0)
-        $icoBytes.AddRange([System.BitConverter]::GetBytes([UInt16]1))
-        $icoBytes.AddRange([System.BitConverter]::GetBytes([UInt16]32))
-        $icoBytes.AddRange([System.BitConverter]::GetBytes([UInt32]$imageSize))
-        $icoBytes.AddRange([System.BitConverter]::GetBytes([UInt32]$offset))
-        $icoBytes.AddRange($pngBytes)
-
-        if (-not (Test-Path $iconDir)) {
-            New-Item -ItemType Directory -Path $iconDir -Force | Out-Null
-        }
-        [System.IO.File]::WriteAllBytes($iconPath, $icoBytes.ToArray())
-    } else {
-        throw "Can't process URL."
+    if (-not (Test-Path $iconDir)) {
+        New-Item -ItemType Directory -Path $iconDir -Force | Out-Null
     }
+
+    $pngBytes = $webClient.DownloadData($iconUrl)
+
+    # Dimensões do PNG (cabeçalho IHDR, big-endian: largura no offset 16, altura no 20)
+    $width  = ($pngBytes[16] * 16777216) + ($pngBytes[17] * 65536) + ($pngBytes[18] * 256) + $pngBytes[19]
+    $height = ($pngBytes[20] * 16777216) + ($pngBytes[21] * 65536) + ($pngBytes[22] * 256) + $pngBytes[23]
+    if ($width  -ge 256) { $width  = 0 }
+    if ($height -ge 256) { $height = 0 }
+
+    # Empacota o PNG dentro de um ICO (o atalho do Windows exige .ico, não .png)
+    $icoBytes = New-Object System.Collections.Generic.List[byte]
+    $icoBytes.AddRange([System.BitConverter]::GetBytes([UInt16]0))   # reservado
+    $icoBytes.AddRange([System.BitConverter]::GetBytes([UInt16]1))   # tipo (1 = ícone)
+    $icoBytes.AddRange([System.BitConverter]::GetBytes([UInt16]1))   # nº de imagens
+    $icoBytes.Add([byte]$width)
+    $icoBytes.Add([byte]$height)
+    $icoBytes.Add([byte]0)                                           # cores da paleta
+    $icoBytes.Add([byte]0)                                           # reservado
+    $icoBytes.AddRange([System.BitConverter]::GetBytes([UInt16]1))   # planos
+    $icoBytes.AddRange([System.BitConverter]::GetBytes([UInt16]32))  # bits por pixel
+    $icoBytes.AddRange([System.BitConverter]::GetBytes([UInt32]$pngBytes.Length))
+    $icoBytes.AddRange([System.BitConverter]::GetBytes([UInt32]22))  # offset dos dados da imagem
+    $icoBytes.AddRange($pngBytes)
+
+    [System.IO.File]::WriteAllBytes($iconPath, $icoBytes.ToArray())
 } catch {
     Write-Warning "Can't create icon: $_"
 }
