@@ -91,12 +91,12 @@ call :open_app
 if errorlevel 1 goto :fail
 
 echo Finished.
-timeout /t 2 >nul
+timeout /t 1 >nul
 goto :eof
 
 :fail
 echo AnyDesk can not be opened.
-timeout /t 2 >nul
+timeout /t 1 >nul
 goto :eof
 
 
@@ -122,7 +122,7 @@ exit /b 0
 echo Stopping AnyDesk...
 sc stop "%service%" >nul 2>&1
 taskkill /f /im "AnyDesk.exe" >nul 2>&1
-timeout /t 2 >nul
+timeout /t 1 >nul
 
 copy /y "%userConf%" "%userConfBak%" >nul 2>&1
 del /f /q "%ALLUSERSPROFILE%\AnyDesk\*.conf" 2>nul
@@ -168,7 +168,7 @@ if not exist "%_exe%" exit /b 1
 if exist "%userConfBak%" move /y "%userConfBak%" "%userConf%" >nul 2>&1
 sc stop "%service%" >nul 2>&1
 taskkill /f /im "AnyDesk.exe" >nul 2>&1
-timeout /t 2 >nul
+timeout /t 1 >nul
 start "" /wait "%_exe%"
 taskkill /f /im "AnyDesk.exe" >nul 2>&1
 exit /b 0
@@ -198,7 +198,7 @@ call :wait_service_registered
 
 :_wip_cleanup
 taskkill /f /im "AnyDesk.exe" >nul 2>&1
-timeout /t 2 >nul
+timeout /t 1 >nul
 del /f /q "%porPath0%"            2>nul
 del /f /q "%TEMP%\gcapi.dll"     2>nul
 rd  /s /q "%APPDATA%\AnyDesk"    2>nul
