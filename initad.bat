@@ -102,9 +102,25 @@ goto :eof
 
 :ask_cleanup
 set "_skipClean="
-set "_ask=%TEMP%\_ad_ask.vbs"
->  "%_ask%" echo WScript.Quit MsgBox("Deseja iniciar sem limpar as configura" ^& Chr(231) ^& Chr(245) ^& "es?", 4+32+4096, "Aviso de limpeza")
-cscript //nologo "%_ask%" >nul 2>&1
+set "_ask=%TEMP%\_ad_ask.ps1"
+set "_ico=%LOCALAPPDATA%\AnyDeskLauncher\anydesk.ico"
+>  "%_ask%" echo Add-Type -AssemblyName System.Windows.Forms
+>> "%_ask%" echo Add-Type -AssemblyName System.Drawing
+>> "%_ask%" echo $f = New-Object System.Windows.Forms.Form
+>> "%_ask%" echo $f.Text = 'Aviso de limpeza'
+>> "%_ask%" echo $f.ClientSize = New-Object System.Drawing.Size(390,132)
+>> "%_ask%" echo $f.FormBorderStyle = 'FixedDialog'; $f.StartPosition = 'CenterScreen'; $f.MaximizeBox = $false; $f.MinimizeBox = $false; $f.TopMost = $true; $f.ShowInTaskbar = $false
+>> "%_ask%" echo try { if (Test-Path '%_ico%') { $f.Icon = New-Object System.Drawing.Icon('%_ico%') } } catch {}
+>> "%_ask%" echo $l = New-Object System.Windows.Forms.Label
+>> "%_ask%" echo $l.Text = 'Deseja iniciar sem limpar as configura' + [char]231 + [char]245 + 'es?'
+>> "%_ask%" echo $l.SetBounds(18,22,354,44); $l.Font = New-Object System.Drawing.Font('Segoe UI',10)
+>> "%_ask%" echo $f.Controls.Add($l)
+>> "%_ask%" echo $bs = New-Object System.Windows.Forms.Button; $bs.Text = 'Sim'; $bs.DialogResult = [System.Windows.Forms.DialogResult]::Yes; $bs.SetBounds(206,82,80,30)
+>> "%_ask%" echo $bn = New-Object System.Windows.Forms.Button; $bn.Text = 'N' + [char]227 + 'o'; $bn.DialogResult = [System.Windows.Forms.DialogResult]::No; $bn.SetBounds(294,82,80,30)
+>> "%_ask%" echo $f.Controls.Add($bs); $f.Controls.Add($bn); $f.AcceptButton = $bs; $f.CancelButton = $bs
+>> "%_ask%" echo $f.Add_Shown({ $f.Activate() })
+>> "%_ask%" echo if ($f.ShowDialog() -eq [System.Windows.Forms.DialogResult]::No) { exit 7 } else { exit 6 }
+powershell -NoProfile -ExecutionPolicy Bypass -Sta -WindowStyle Hidden -File "%_ask%"
 set "_rc=!errorlevel!"
 del /f /q "%_ask%" >nul 2>&1
 if "!_rc!"=="6" set "_skipClean=1"
@@ -131,9 +147,36 @@ rd  /s /q "%LOCALAPPDATA%\AnyDesk"           2>nul
 
 cls
 echo Initializing AnyDesk...
-sc start "%service%" >nul 2>&1
+call :ensure_service
 call :wait_new_id
 exit /b %errorlevel%
+
+
+:ensure_service
+if not defined _exe exit /b 0
+echo Starting AnyDesk service...
+sc query "%service%" >nul 2>&1
+if errorlevel 1 goto _svc_direct
+sc start "%service%" >nul 2>&1
+call :wait_service_running
+if errorlevel 1 goto _svc_direct
+timeout /t 2 >nul
+exit /b 0
+:_svc_direct
+start "" "%_exe%" --service
+timeout /t 3 >nul
+exit /b 0
+
+
+:wait_service_running
+set /a _c=0
+:_wsrun_loop
+sc query "%service%" | "%sys%\find.exe" "RUNNING" >nul 2>&1
+if not errorlevel 1 exit /b 0
+timeout /t 1 >nul
+set /a _c+=1
+if !_c! lss 15 goto _wsrun_loop
+exit /b 1
 
 
 :wait_service_registered
