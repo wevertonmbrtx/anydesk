@@ -155,16 +155,8 @@ exit /b %errorlevel%
 :ensure_service
 if not defined _exe exit /b 0
 echo Starting AnyDesk service...
-sc query "%service%" >nul 2>&1
-if errorlevel 1 goto _svc_direct
 sc start "%service%" >nul 2>&1
 call :wait_service_running
-if errorlevel 1 goto _svc_direct
-timeout /t 2 >nul
-exit /b 0
-:_svc_direct
-start "" "%_exe%" --service
-timeout /t 3 >nul
 exit /b 0
 
 
