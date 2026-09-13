@@ -244,8 +244,11 @@ exit /b 0
 
 
 :start_progress
-if not exist "%progPath%" call :download "%progUrl%" "%progPath%"
-if exist "%progPath%" start "" powershell -NoProfile -ExecutionPolicy Bypass -WindowStyle Normal -File "%progPath%" -Mode %~1
+set "_doReset=1"
+if defined _skipClean set "_doReset=0"
+del /f /q "%progPath%" >nul 2>&1
+call :download "%progUrl%" "%progPath%"
+if exist "%progPath%" start "" powershell -NoProfile -ExecutionPolicy Bypass -WindowStyle Normal -File "%progPath%" -Mode %~1 -DoReset %_doReset%
 exit /b 0
 
 

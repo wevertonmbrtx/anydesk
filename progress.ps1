@@ -1,6 +1,7 @@
 ﻿param(
     [ValidateSet('installed', 'portable', 'auto')]
-    [string]$Mode = 'auto'
+    [string]$Mode = 'auto',
+    [int]$DoReset = 1
 )
 
 $ErrorActionPreference = 'SilentlyContinue'
@@ -115,6 +116,16 @@ function Test-ConfCleared {
     return -not (Get-ChildItem "$confDir\*.conf" -ErrorAction SilentlyContinue)
 }
 
+function Test-Installed {
+    foreach ($p in @(
+        "${env:ProgramFiles(x86)}\AnyDesk\AnyDesk.exe",
+        "$env:ProgramFiles\AnyDesk\AnyDesk.exe"
+    )) {
+        if (Test-Path $p) { return $true }
+    }
+    return $false
+}
+
 function Invoke-Stage {
     param(
         [string]$Label,
@@ -157,50 +168,85 @@ function Invoke-Stage {
 
 Write-Bar 0 'Initializing...'
 
+# Monta as etapas conforme o que o script REALMENTE vai fazer:
+# portátil (baixar + instalar) e/ou reset (parar + limpar), sempre terminando em abrir.
+$stages = @()
+
 if ($Mode -eq 'portable') {
-    Invoke-Stage 'Downloading AnyDesk...' 0 30 180000 400 {
-        (Test-Path $porPath0) -and ((Get-Item $porPath0 -ErrorAction SilentlyContinue).Length -ge 4000000)
-    } {
-        if (-not (Test-Path $porPath0)) { return 0.0 }
-        [math]::Min(0.99, [double](Get-Item $porPath0 -ErrorAction SilentlyContinue).Length / 5000000)
-    } | Out-Null
-
-    $opened = Invoke-Stage 'Opening AnyDesk...' 30 100 300000 400 {
-        Test-AnyDeskWindow
-    } $null
-
-    if (-not $opened) {
-        while (-not (Test-AnyDeskWindow)) {
-            Write-Bar 99 'Opening AnyDesk...'
-            Start-Sleep -Milliseconds 400
+    $stages += @{
+        Label   = 'Downloading AnyDesk...'
+        Weight  = 35
+        Timeout = 180000
+        Poll    = 400
+        Done    = { (Test-Path $porPath0) -and ((Get-Item $porPath0 -ErrorAction SilentlyContinue).Length -ge 4000000) }
+        Ratio   = {
+            if (-not (Test-Path $porPath0)) { return 0.0 }
+            [math]::Min(0.99, [double](Get-Item $porPath0 -ErrorAction SilentlyContinue).Length / 5000000)
         }
     }
-
-    Write-Bar 100 'Done.'
-    Start-Sleep -Milliseconds 1200
-    [Console]::CursorVisible = $true
-    exit 0
+    $stages += @{
+        Label   = 'Installing AnyDesk...'
+        Weight  = 25
+        Timeout = 180000
+        Poll    = 500
+        Done    = { Test-Installed }
+        Ratio   = $null
+    }
 }
 
-Invoke-Stage 'Stopping AnyDesk...' 0 18 30000 400 {
-    (-not (Test-AnyDeskRunning)) -and (Test-ServiceStopped)
-} $null | Out-Null
-
-Invoke-Stage 'Clearing configuration...' 18 30 20000 300 {
-    Test-ConfCleared
-} $null | Out-Null
-
-$opened = Invoke-Stage 'Opening AnyDesk...' 30 100 120000 400 {
-    Test-AnyDeskWindow
-} $null
-
-if (-not $opened) {
-    while (-not (Test-AnyDeskWindow)) {
-        Write-Bar 99 'Opening AnyDesk...'
-        Start-Sleep -Milliseconds 400
+if ($DoReset -ne 0) {
+    if ($Mode -eq 'installed') {
+        $stages += @{
+            Label   = 'Stopping AnyDesk...'
+            Weight  = 18
+            Timeout = 30000
+            Poll    = 400
+            Done    = { (-not (Test-AnyDeskRunning)) -and (Test-ServiceStopped) }
+            Ratio   = $null
+        }
     }
+    $stages += @{
+        Label   = 'Clearing configuration...'
+        Weight  = 12
+        Timeout = 20000
+        Poll    = 300
+        Done    = { Test-ConfCleared }
+        Ratio   = $null
+    }
+}
+
+$stages += @{
+    Label   = 'Opening AnyDesk...'
+    Weight  = 30
+    Timeout = 120000
+    Poll    = 400
+    Done    = { Test-AnyDeskWindow }
+    Ratio   = $null
+}
+
+# Distribui 0-100% entre as etapas ativas, proporcional ao peso.
+$totalWeight = ($stages | ForEach-Object { $_.Weight } | Measure-Object -Sum).Sum
+$acc = 0
+for ($i = 0; $i -lt $stages.Count; $i++) {
+    $st    = $stages[$i]
+    $start = [int][math]::Floor($acc * 100 / $totalWeight)
+    $acc  += $st.Weight
+    if ($i -eq $stages.Count - 1) {
+        $end = 100
+    } else {
+        $end = [int][math]::Floor($acc * 100 / $totalWeight)
+    }
+    if ($end -le $start) { $end = $start + 1 }
+    Invoke-Stage $st.Label $start $end $st.Timeout $st.Poll $st.Done $st.Ratio | Out-Null
+}
+
+# Só finaliza quando a janela do AnyDesk realmente aparecer.
+while (-not (Test-AnyDeskWindow)) {
+    Write-Bar 99 'Opening AnyDesk...'
+    Start-Sleep -Milliseconds 400
 }
 
 Write-Bar 100 'Done.'
 Start-Sleep -Milliseconds 1200
 [Console]::CursorVisible = $true
+exit 0
